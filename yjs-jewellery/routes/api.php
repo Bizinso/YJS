@@ -177,3 +177,50 @@ Route::prefix('partner')->group(function () {
 
 
 
+
+/*
+|--------------------------------------------------------------------------
+| Webhook Routes (No Authentication)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('webhooks')->group(function () {
+    Route::post('/razorpay', [App\Http\Controllers\WebhookController::class, 'razorpay']);
+    Route::post('/shiprocket', [App\Http\Controllers\WebhookController::class, 'shiprocket']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Customer Payment & Shipping Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:customer'])->prefix('customer')->group(function () {
+    // Offers
+    Route::get('/offers/applicable', [App\Http\Controllers\OffersController::class, 'getApplicable']);
+    Route::post('/offers/apply', [App\Http\Controllers\OffersController::class, 'apply']);
+    Route::delete('/offers/remove', [App\Http\Controllers\OffersController::class, 'remove']);
+    Route::post('/offers/validate-coupon', [App\Http\Controllers\OffersController::class, 'validateCoupon']);
+    
+    // Payments
+    Route::post('/orders/{order}/payment', [App\Http\Controllers\OrderPaymentController::class, 'createPayment']);
+    Route::post('/payment/verify', [App\Http\Controllers\OrderPaymentController::class, 'verifyPayment']);
+    Route::get('/orders/{order}/payment-status', [App\Http\Controllers\OrderPaymentController::class, 'getStatus']);
+    Route::post('/orders/{order}/retry-payment', [App\Http\Controllers\OrderPaymentController::class, 'retryPayment']);
+    
+    // Shipping
+    Route::get('/shipping/serviceability', [App\Http\Controllers\ShippingController::class, 'checkServiceability']);
+    Route::get('/orders/{order}/tracking', [App\Http\Controllers\ShippingController::class, 'track']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Employee Shipping Management Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:employee'])->prefix('employee/orders/{order}')->group(function () {
+    Route::post('/ship', [App\Http\Controllers\ShippingController::class, 'pushToShiprocket']);
+    Route::post('/generate-awb', [App\Http\Controllers\ShippingController::class, 'generateAWB']);
+    Route::post('/schedule-pickup', [App\Http\Controllers\ShippingController::class, 'schedulePickup']);
+    Route::get('/label', [App\Http\Controllers\ShippingController::class, 'getLabel']);
+    Route::post('/cancel-shipment', [App\Http\Controllers\ShippingController::class, 'cancelShipment']);
+    Route::post('/sync-tracking', [App\Http\Controllers\ShippingController::class, 'syncTracking']);
+});
