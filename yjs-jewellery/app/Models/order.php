@@ -101,3 +101,30 @@ class order extends Model
         return $this->hasMany(OrderProduct::class, 'order_id');
     }
 }
+
+    // ============ NEW RELATIONSHIPS ============
+    
+    public function payments()
+    {
+        return $this->hasMany(\App\Models\OrderPayment::class, 'order_id');
+    }
+
+    public function refunds()
+    {
+        return $this->hasMany(\App\Models\OrderRefund::class, 'order_id');
+    }
+
+    public function shipmentTracking()
+    {
+        return $this->hasOne(\App\Models\ShipmentTracking::class, 'order_id');
+    }
+
+    public function orderOffer()
+    {
+        return $this->hasOne(\App\Models\OrderOffer::class, 'order_id');
+    }
+
+    public function cancellation()
+    {
+        return $this->hasOne(\App\Models\OrderCancellation::class, 'order_id');
+    }
