@@ -1,0 +1,131 @@
+// comman //
+body{
+    box-sizing: border-box;
+}
+.row{
+    margin: 0px !important;
+}
+a{
+    text-decoration: none;
+}
+
+// form elements //
+label{
+    font-size: 13px;
+    font-weight: 400;
+    margin-bottom: 5px;
+}
+span{
+    &.label_prepend{
+        width: 40px;
+        border: 1px solid #ddd;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 8px 0px 0px 8px;
+    }
+    i{
+        font-size: 13px;
+        color: #3F3E54;
+    }
+}
+input{
+    color: #3F3E54;
+    &:focus{
+        box-shadow: none !important;
+        border-color: #ddd !important;
+    }
+    &.form_input_prepend{
+        border-left: none;
+        padding-left: 0px;
+    }
+}
+/* Change the white to any color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+}
+.btn-primary{
+    background-color: #EDC277;
+    border-color: #EDC277;
+    &:hover{
+        background-color: #e9b252;
+        border-color: #e9b252;
+    }
+}
+.btn-secondary{
+    background-color: #3F3E54;
+    border-color: #3F3E54;
+    &:hover{
+        background-color: #242430;
+        border-color: #242430;
+    }
+}
+.border_input_light_append{
+    border-color: #ddd;
+    &:hover{
+        border-color: #ddd;
+    }
+}
+
+// admin login screen //
+
+.admin_login{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    .admin_login_avtar_img{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 60vw;
+        .authontication_avtar_img{
+            width: 100vh;
+        }        
+    }
+    .admin_login_form{
+        width: 40vw;
+        h3{
+            color: #E9BE75;
+        }
+        h5{
+            font-weight: 400;
+            color: #3F3E54;
+            font-size: 18px;
+        }
+        form{
+            width: 320px;
+            .forgot_password{
+                font-size: 13px;
+                color: #3F3E54;
+                font-weight: 500;
+                &:hover{
+                    color: #E9BE75;
+                }
+            }
+            .link_to_back{
+                color: #3F3E54;
+                font-size: 14px;
+                font-weight: 500;
+                transition: 0.1s all;
+                &:hover{
+                    font-size: 16px;
+                    transition: 0.1s all;
+                }
+            }            
+        }
+    }
+    .authontication_logo_img{
+        width: 193px;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+    }
+    
+}
+
+
+// admin login screen end //
