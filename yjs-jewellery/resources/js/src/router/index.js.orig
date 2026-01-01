@@ -1,0 +1,157 @@
+import { createRouter, createWebHistory } from 'vue-router'
+
+<<<<<<< HEAD
+import Home from '../views/Home.vue'
+import CollectionsIndex from '../views/collections/Collections.vue'
+import DetailsIndex from '../views/collections/Details.vue'
+import AboutIndex from '../views/static/About.vue'
+import ProductsIndex from '../views/static/Product.vue'
+import ProductsSelectedIndex from '../views/static/ProductSelected.vue'
+import ProductsDetailsIndex from '../views/static/ProductDetails.vue'
+import eventsIndex from '../views/static/Events.vue'
+=======
+import Home from '../views/Home.vue';
+import adminHome from '../views/AdminHome.vue';
+import CollectionsIndex from '../views/collections/Collections.vue';
+import DetailsIndex from '../views/collections/Details.vue';
+import AboutIndex from '../views/static/About.vue';
+import ProductsIndex from '../views/static/Product.vue';
+import ProductsSelectedIndex from '../views/static/ProductSelected.vue';
+import ProductsDetailsIndex from '../views/static/ProductDetails.vue';
+import eventsIndex from '../views/static/Events.vue';
+>>>>>>> 826928e8058abe98c5fb47f74efeda9c7fa663f8
+
+// Admin pages
+import AdminLogin from '../views/admin/authontication/Login.vue'
+import AdminForgotPassword from '../views/admin/authontication/ForgotPassword.vue'
+import AdminResetPassword from '../views/admin/authontication/ResetPassword.vue'
+import AdminDashboard from '../views/admin/Dashboard.vue'
+
+const routes = [
+  // Frontend routes
+  { path: '/', name: 'home', component: Home , meta: { requiresAuth: false, layout: 'default' } },
+  { path: '/collections', name: 'collections', component: CollectionsIndex , meta: { requiresAuth: false , layout: 'full'} },
+  { path: '/details', name: 'details', component: DetailsIndex, meta: { requiresAuth: false , layout: 'full'}  },
+  { path: '/about', name: 'about', component: AboutIndex , meta: { requiresAuth: false , layout: 'full'} },
+  { path: '/products', name: 'products', component: ProductsIndex, meta: { requiresAuth: false , layout: 'full'}  },
+  { path: '/productsSelected', name: 'productsSelected', component: ProductsSelectedIndex , meta: { requiresAuth: false , layout: 'full'} },
+  { path: '/productsDetails', name: 'productsDetails', component: ProductsDetailsIndex , meta: { requiresAuth: false , layout: 'full'} },
+  { path: '/events', name: 'events', component: eventsIndex , meta: { requiresAuth: false , layout: 'full'} },
+
+  // Admin auth routes
+  { path: '/admin/login', name: 'adminLogin', component: AdminLogin, meta: { requiresAuth: false, layout: 'full' } },
+  { path: '/admin/forgot-password', name: 'adminForgotPassword', component: AdminForgotPassword, meta: { requiresAuth: false, layout: 'full' } },
+  { path: '/admin/reset-password', name: 'adminResetPassword', component: AdminResetPassword, meta: { requiresAuth: false, layout: 'full' } },
+
+<<<<<<< HEAD
+  // Admin dashboard
+  { path: '/admin/dashboard', name: 'adminDashboard', component: AdminDashboard, meta: { requiresAuth: true } },
+
+  // Fallback
+  { path: '/:pathMatch(.*)*', redirect: '/' },
+=======
+const routes = [
+  {
+    path: "/",
+    name: "home",
+    meta: { requiresAuth: false, layout: 'full' },
+    component: Home,
+  },
+  {
+    path: "/admin",
+    name: "admin",
+    meta: { requiresAuth: false, layout: 'DefaultLayout' },
+    component: adminHome,
+  },
+  {
+    path: "/collections",
+    name: "collections",
+    meta: { requiresAuth: false, layout: 'full' },
+    component: CollectionsIndex,
+  },
+  {
+    path: "/details",
+    name: "details",
+    meta: { requiresAuth: false, layout: 'full' },
+    component: DetailsIndex,
+  },
+  {
+    path: "/about",
+    name: "about",
+    meta: { requiresAuth: false, layout: 'full' },
+    component: AboutIndex,
+  },
+  {
+    path: "/products",
+    name: "products",
+    meta: { requiresAuth: false, layout: 'full' },
+    component: ProductsIndex,
+  },
+  {
+    path: "/productsSelected",
+    name: "productsSelected",
+    meta: { requiresAuth: false, layout: 'full' },
+    component: ProductsSelectedIndex,
+  },
+  {
+    path: "/productsDetails",
+    name: "productsDetails",
+    meta: { requiresAuth: false, layout: 'full' },
+    component: ProductsDetailsIndex,
+  },
+  {
+    path: "/events",
+    name: "events",
+    meta: { requiresAuth: false, layout: 'full' },
+    component: eventsIndex,
+  },
+  
+  // Admin pages start //
+  {
+    path: "/admin/login",
+    name: "adminLogin",
+    meta: { requiresAuth: true, layout: 'adminFull' },
+    component: AdminLogin,
+  },
+  {
+    path: "/admin/forgot-password",
+    name: "adminForgotPassword",
+    meta: { requiresAuth: true, layout: 'adminFull' },
+    component: AdminForgotPassword,
+  },
+  {
+    path: "/admin/reset-password",
+    name: "adminResetPassword",
+    meta: { requiresAuth: true, layout: 'adminFull' },
+    component: AdminResetPassword,
+  },
+  // Admin pages end //
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: "/"  // ✅ fallback to home
+  }
+>>>>>>> 826928e8058abe98c5fb47f74efeda9c7fa663f8
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+// ✅ Auth guard
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('employee_token')
+
+  if (to.meta.requiresAuth && !token) {
+    next({ name: 'adminLogin' })
+  } else if (
+    ['adminLogin', 'adminForgotPassword', 'adminResetPassword'].includes(to.name) &&
+    token
+  ) {
+    next({ name: 'adminDashboard' })
+  } else {
+    next()
+  }
+})
+
+export default router

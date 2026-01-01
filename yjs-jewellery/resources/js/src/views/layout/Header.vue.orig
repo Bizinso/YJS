@@ -1,0 +1,508 @@
+<script setup>
+import { isEmployeeLoggedIn, setEmployeeLogout } from '@/stores/authEmployee'
+import { useRouter } from 'vue-router';
+import axiosEmployee from '@axiosEmployee';
+import { VueMarqueeSlider } from 'vue3-marquee-slider' ;
+import 'vue3-carousel/carousel.css';
+import { Carousel, Slide, Pagination, Navigation } from 'vue3-carousel';
+
+import { ref, computed, nextTick } from "vue";
+
+const showModal = ref(false);
+const showOTPForm = ref(false);
+
+const selectedRole = ref("customer"); // default role
+
+const formData = ref({
+  identifier: "", // email or mobile number
+  otp: ["", "", "", "", "", ""],
+  errorMessage: "",
+});
+
+// OPEN / CLOSE
+const openLogin = () => (showModal.value = true);
+const closeModal = () => (showModal.value = false);
+
+// VALIDATION (email or 10-digit mobile)
+const identifierValid = computed(() => {
+  const value = formData.value.identifier.trim();
+
+  const phoneValid = /^\d{10}$/.test(value);
+  const emailValid = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value);
+
+  return phoneValid || emailValid;
+});
+
+// SEND OTP → show OTP screen
+const sendOTP = () => {
+  if (!identifierValid.value) {
+    formData.value.errorMessage = "Enter a valid Email or Mobile number";
+    return;
+  }
+
+  showOTPForm.value = true;
+
+  // empty black boxes initially
+  formData.value.otp = ["", "", "", "", "", ""];
+
+  nextTick(() => {
+    document.querySelector(".otpField")?.focus();
+  });
+};
+
+// OTP input handling
+const handleOtpInput = (value, index) => {
+  formData.value.otp[index] = value.replace(/\D/g, "");
+
+  if (value && index < 5) {
+    nextTick(() => {
+      document.querySelectorAll(".otpField")[index + 1]?.focus();
+    });
+  }
+};
+
+const handleOtpKeydown = (event, index) => {
+  if (event.key === "Backspace") {
+    if (formData.value.otp[index]) {
+      formData.value.otp[index] = "";
+    } else if (index > 0) {
+      nextTick(() => {
+        document.querySelectorAll(".otpField")[index - 1]?.focus();
+      });
+    }
+  }
+};
+
+const goBack = () => {
+  showOTPForm.value = false;
+  formData.value.otp = ["", "", "", "", "", ""];
+};
+
+//-------------------------------------------
+const isSidebarOpen = ref(false)
+const toggleSidebar = () => (isSidebarOpen.value = !isSidebarOpen.value)
+const router = useRouter()
+
+const logout = async () => {
+  try {
+    await axiosEmployee.post('/logout')
+  } catch (error) {
+    console.error('Logout failed:', error)
+  } finally {
+    localStorage.removeItem('employee_token')
+    delete axiosEmployee.defaults.headers.common['Authorization']
+    setEmployeeLogout()
+    router.push({ name: 'adminLogin' })
+  }
+}
+
+</script>
+<template>
+  <div class="yjs_header">
+    <div class="header_marquee">
+      <div class="marquee_effect">
+        <vue-marquee-slider id="marquee-header-slider" :speed="30000" autoWidth :space="100">
+          <p>Event Participation Name & Date</p>
+          <p>Event Participation Name & Date</p>
+          <p>Event Participation Name & Date</p>
+          <p>Event Participation Name & Date</p>
+          <p>Event Participation Name & Date</p>
+          <p>Event Participation Name & Date</p>
+          <p>Event Participation Name & Date</p>
+        </vue-marquee-slider>
+      </div>
+    </div>
+
+    <!-- 🔹 Logo + Search + Icons -->
+    <div class="header_logo_cart py-2">
+      <div class="container">
+        <div class="logo_cart_divider">
+          <!-- Hamburger + Logo -->
+          <div class="internallogo">
+            <div class="mobframe">
+
+              <button class="hamburger-btn me-2 d-lg-none" @click="toggleSidebar">
+                <i class="fa-solid fa-bars"></i>
+              </button>
+              <b-link :to="{name: 'home'}">
+                <img src="../assets/images/yjs_logo.png" class="header_logo_yjs deskShow" alt="yjs_logo" />
+                <img src="../assets/images/yjs.png" class="header_logo_yjs mobShow" alt="yjs_logo" />
+              </b-link>
+
+            </div>
+              <ul class="header_icons mobFlexShow align-items-center mb-0 ">
+                <li><i class="fa-solid fa-cart-shopping"></i></li>
+                <li><i class="fa-solid fa-heart"></i></li>
+                <li><i class="fa-solid fa-user"></i></li>
+            </ul>
+          </div>
+
+          <!-- Search (mobile: full width below) -->
+          <div class="search_wrapper">
+            <i class="fa-solid fa-magnifying-glass search_header_placeholder"></i>
+            <b-form-input class="header_search_input" placeholder="Search 'Necklace'"></b-form-input>
+          </div>
+
+          <!-- Icons -->
+          <ul class="header_icons deskFlexShow align-items-center mb-0">
+            <li><i class="fa-solid fa-cart-shopping"></i><span>CART</span></li>
+            <li><i class="fa-solid fa-heart"></i><span>WISHLIST</span></li>
+            <li><i class="fa-solid fa-user"></i><span>ACCOUNT</span></li>
+            <li v-if="!isCustomerLoggedIn" @click="openLogin">
+              <i class="fa-solid fa-user"></i>
+              <span>LOGIN</span>
+            </li>
+            <li v-else>
+              <i class="fa-solid fa-user"></i>
+              <span>ACCOUNT</span>
+            </li>
+            <li v-if="isCustomerLoggedIn" @click="logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔹 Navigation (Desktop only) -->
+    <div class="header_navigation d-none d-lg-block">
+      <div class="container">
+        <div class="navigation_divider d-flex justify-content-between align-items-center">
+          <div class="navigation_list">
+            <ul class="d-flex mb-0">
+              <li><b-link :to="{name: 'about'}">About Us</b-link></li>
+              <li><b-link :to="{name: 'products'}">Our Products</b-link></li>
+              <li><b-link>Our Partners</b-link></li>
+              <li><b-link>Shop Online</b-link></li>
+              <li><b-link :to="{name: 'collections'}">Collections</b-link></li>
+              <li><b-link>Contact Us</b-link></li>
+            </ul>
+          </div>
+          <div class="navigation_other d-flex align-items-center">
+            <p class="mb-0 me-2">Gold Rate: 1,07,145.00</p>
+            <span class="me-3">+0.25% <i class="fa-solid fa-caret-up"></i></span>
+            <b-button class="btn_gprimary">Events</b-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔹 Sidebar (Mobile Navigation) -->
+    <transition name="slide">
+      <div v-if="isSidebarOpen" class="mobile_sidebar">
+        <div class="sidebar_header d-flex justify-content-between align-items-center">
+          
+          <img src="../assets/images/yjs_logo.png" class="header_logo_yjs w-75" alt="yjs_logo" />
+          <button class="close-btn" @click="toggleSidebar">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <ul>
+          <li><b-link :to="{name: 'about'}">About Us</b-link></li>
+          <li><b-link :to="{name: 'products'}">Our Products</b-link></li>
+          <li><b-link>Our Partners</b-link></li>
+          <li><b-link>Shop Online</b-link></li>
+          <li><b-link :to="{name: 'collections'}">Collections</b-link></li>
+          <li><b-link>Contact Us</b-link></li>
+        </ul>
+      </div>
+    </transition>
+    
+    <div v-if="isSidebarOpen" class="sidebar_overlay" @click="toggleSidebar"></div>
+
+
+    <b-modal
+  v-model="showModal"
+  hide-header
+  hide-footer
+  centered
+  size="md"
+  class="customModal"
+>
+  <div class="contentFrame loginFrames">
+
+    <!-- CLOSE -->
+    <b-button class="CloseBTN" @click="closeModal">
+      <img src="../assets/images/close.svg" />
+    </b-button>
+
+    <div v-if="!showOTPForm">
+      <h3 class="formHeading">Login to Your Account</h3>
+
+      <div class="d-flex justify-content-between gap-3 roleSelect">
+
+        <div
+          :class="['roleBox', selectedRole === 'customer' ? 'activeBox' : '']"
+          @click="selectedRole = 'customer'"
+        >
+          <input type="radio" name="role" value="customer" v-model="selectedRole" class="radioInputBox" />
+          <img src="../assets/images/customer.svg" class="roleImg" />
+          <p>Customer</p>
+        </div>
+
+        <div
+          :class="['roleBox', selectedRole === 'partner' ? 'activeBox' : '']"
+          @click="selectedRole = 'partner'"
+        >
+          <input type="radio" name="role" value="partner" v-model="selectedRole" class="radioInputBox" />
+          <img src="../assets/images/partner.svg" class="roleImg" />
+          <p>Partner</p>
+        </div>
+      </div>
+
+      <!-- EMAIL / MOBILE FIELD -->
+      <b-form-group class="leg" label="Email Address Or Mobile Number">
+        <b-form-input
+          v-model="formData.identifier"
+          placeholder="Enter email or mobile"
+        />
+      </b-form-group>
+
+      <small v-if="formData.errorMessage" class="text-danger">
+        {{ formData.errorMessage }}
+      </small>
+
+      <!-- SEND OTP BUTTON -->
+      <b-button
+        class="buyNowBtn w-100 mt-3"
+        :disabled="!identifierValid"
+        @click="sendOTP"
+      >Send OTP</b-button>
+    </div>
+
+    <!-- ======================= STEP 2: OTP SCREEN ======================= -->
+    <div v-else>
+      <h3 class="formHeading">Enter OTP</h3>
+      <h4 class="formSubHeading">OTP is sent to your entered details</h4>
+      <h3 class="infoBox">{{ formData.identifier }}  <img src="../assets/images/pen.svg" class="penImg"  @click="goBack" /></h3>
+
+      <div class="d-flex justify-content-center gap-2 mt-3">
+        <b-form-input
+          v-for="(digit, index) in formData.otp"
+          :key="index"
+          v-model="formData.otp[index]"
+          maxlength="1"
+          class="otpField text-center otpBox"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          @update:modelValue="handleOtpInput($event, index)"
+          @keydown="handleOtpKeydown($event, index)"
+        />
+      </div>
+
+      <button class="buyNowBtn w-100 mt-4">Verify OTP</button>
+
+      <p class="didnt">Didn't Receive the OTP?</p>
+      <button class="buttonLikeLink" @click="goBack">Resend OTP</button>
+    </div>
+  </div>
+</b-modal>
+
+  </div>
+</template>
+
+<style scoped>
+/* ===== General Header Styling ===== */
+/* .yjs_header {
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+} */
+
+
+/* ===== Logo & Search ===== */
+.logo_cart_divider {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+/* .header_logo_yjs {
+  height: 50px;
+} */
+.search_wrapper {
+  position: relative;
+  flex: 1;
+}
+.search_header_placeholder {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  color: #999;
+}
+.header_search_input {
+  padding-left: 35px;
+  border-radius: 25px;
+}
+
+/* ===== Icons ===== */
+/* .header_icons li {
+  list-style: none;
+  margin-left: 15px;
+  text-align: center;
+}
+.header_icons li i {
+  font-size: 18px;
+}
+.header_icons li span {
+  display: block;
+  font-size: 12px;
+} */
+
+/* ===== Hamburger ===== */
+.hamburger-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+}
+
+/* ===== Sidebar ===== */
+.mobile_sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100%;
+  background: white;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  /* padding: 0 20px; */
+}
+.sidebar_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 9998;
+  backdrop-filter: blur(2px);
+  transition: opacity 0.3s ease;
+}
+.sidebar_header {
+  border-bottom: 1px solid #ddd;
+  /* padding-bottom: 10px;
+  margin-bottom: 15px; */
+}
+.mobile_sidebar ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.mobile_sidebar ul li {
+  padding: 10px;
+  border-bottom: 1px solid #f1f1f1;
+}
+.mobile_sidebar ul li a {
+  color: #333;
+  text-decoration: none;
+}
+.close-btn {
+  background: none;
+  border: none;margin-right: 20px;
+  font-size: 22px;
+}
+
+/* ===== Animation ===== */
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+.roleSelect .roleBox {
+  flex: 1;
+  padding: 14px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+
+.otpBox {
+  width: 3rem;
+  height: 3.2rem;
+  font-size: 22px;
+  border-radius: 8px;
+  background: #fff;       /* black background */
+  color: #fff;            /* white digits */
+  border: 1px solid #404054;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 992px) {
+  .header_logo_cart .logo_cart_divider {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search_wrapper {
+    width: 100%;
+    margin-top: 10px;
+  }
+.yjs_header .header_logo_cart .logo_cart_divider ul{
+    display: flex;
+    gap: 10px;
+    padding: 0px;
+    margin: 0px;
+}
+  .header_icons {
+    justify-content: space-around;
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+
+  .header_navigation {
+    display: none !important;
+  }
+}
+</style>
+<<<<<<< HEAD
+<script setup>
+import { isCustomerLoggedIn, setCustomerLogout } from '@/stores/authCustomer'
+import { isPartnerLoggedIn, setPartnerLogout } from '@/stores/authPartner'
+import { useRouter } from 'vue-router';
+
+import axiosCustomer from '@axiosCustomer';
+import axiosPartner from '@axiosPartner';
+
+import { ref } from 'vue';
+import { VueMarqueeSlider } from 'vue3-marquee-slider' ;
+import 'vue3-carousel/carousel.css';
+import { Carousel, Slide, Pagination, Navigation } from 'vue3-carousel';
+
+const isSidebarOpen = ref(false)
+const toggleSidebar = () => (isSidebarOpen.value = !isSidebarOpen.value)
+const router = useRouter()
+const contact = ref('')
+const otp = ref('')
+const errors = ref({})
+
+const logout = async () => {
+  try {
+    await axiosEmployee.post('/logout')
+  } catch (error) {
+    console.error('Logout failed:', error)
+  } finally {
+    localStorage.removeItem('employee_token')
+    delete axiosEmployee.defaults.headers.common['Authorization']
+    setEmployeeLogout()
+    router.push({ name: 'adminLogin' })
+  }
+}
+
+const sendOTP = async () => {
+
+
+}
+
+const verifyOTP = async () => {
+  
+}
+
+</script>
+=======
+
+>>>>>>> 125bd5cdba8ec32e507d33a036cadfbadc67e7b7
