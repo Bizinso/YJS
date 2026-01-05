@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
 class Product extends Model
 {
-    use SoftDeletes, LogsActivity;
+    use SoftDeletes, LogsActivity, HasFactory;
 
     protected $table = 'products';
 
@@ -110,5 +111,49 @@ class Product extends Model
     public function variant()
     {
         return $this->hasMany(ProductVariant::class);
+    }
+
+    /**
+     * Get all reviews for the product.
+     */
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /**
+     * Get approved reviews for the product.
+     */
+    public function approvedReviews()
+    {
+        return $this->hasMany(Review::class)->where('status', 'approved');
+    }
+
+    /**
+     * Calculate and return average rating.
+     */
+    public function getAverageRatingAttribute(): float
+    {
+        return round($this->approvedReviews()->avg('rating') ?? 0, 1);
+    }
+
+    /**
+     * Get total review count.
+     */
+    public function getReviewCountAttribute(): int
+    {
+        return $this->approvedReviews()->count();
+    }
+
+    /**
+     * Get rating distribution.
+     */
+    public function getRatingDistributionAttribute(): array
+    {
+        $distribution = [];
+        for ($i = 5; $i >= 1; $i--) {
+            $distribution[$i] = $this->approvedReviews()->where('rating', $i)->count();
+        }
+        return $distribution;
     }
 }

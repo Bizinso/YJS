@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -9,7 +10,7 @@ use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Models\Activity;
 class Category extends Model
 {
-    use SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $table = 'categories';
 
@@ -18,12 +19,20 @@ class Category extends Model
         'parent_id',
         'slug',
         'description',
-        'is_active',
+        'status',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'status' => 'string',
     ];
+
+    /**
+     * Check if category is active.
+     */
+    public function getIsActiveAttribute(): bool
+    {
+        return $this->status === 'A';
+    }
 
     /**
      * Spatie Activity Log Options

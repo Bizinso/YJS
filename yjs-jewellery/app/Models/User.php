@@ -23,7 +23,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'first_name','last_name', 'email', 'phone', 'password', 'user_type', 'status','mobile_code'
+        'first_name', 'last_name', 'email', 'phone', 'password', 'user_type', 'status', 'mobile_code', 'profile_image'
     ];
 
     /**
@@ -118,5 +118,11 @@ class User extends Authenticatable
         return $this->user_type === 'customer';
     }
 
-
+    /**
+     * Get the wishlist items for the user.
+     */
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
 }

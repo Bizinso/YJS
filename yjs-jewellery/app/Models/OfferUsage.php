@@ -27,7 +27,7 @@ class OfferUsage extends Model
 
     public function offer(): BelongsTo
     {
-        return $this->belongsTo(Offers::class, 'offer_id');
+        return $this->belongsTo(offers::class, 'offer_id');
     }
 
     public function order(): BelongsTo

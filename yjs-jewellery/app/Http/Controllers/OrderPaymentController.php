@@ -21,7 +21,7 @@ class OrderPaymentController extends Controller
      */
     public function createPayment(Order $order): JsonResponse
     {
-        $userId = auth('customer')->id();
+        $userId = auth()->id();
         
         // Verify ownership using EXISTING field
         if ($order->customer_id !== $userId) {
@@ -79,7 +79,7 @@ class OrderPaymentController extends Controller
      */
     public function getStatus(Order $order): JsonResponse
     {
-        $userId = auth('customer')->id();
+        $userId = auth()->id();
         
         if ($order->customer_id !== $userId) {
             return response()->json(['success' => false, 'error' => 'Unauthorized'], 403);
@@ -104,7 +104,7 @@ class OrderPaymentController extends Controller
      */
     public function retryPayment(Order $order): JsonResponse
     {
-        $userId = auth('customer')->id();
+        $userId = auth()->id();
         
         if ($order->customer_id !== $userId) {
             return response()->json(['success' => false, 'error' => 'Unauthorized'], 403);

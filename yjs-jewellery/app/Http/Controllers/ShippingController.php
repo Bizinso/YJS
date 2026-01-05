@@ -46,7 +46,7 @@ class ShippingController extends Controller
      */
     public function track(Order $order): JsonResponse
     {
-        $userId = auth('customer')->id();
+        $userId = auth()->id();
         
         if ($order->customer_id !== $userId) {
             return response()->json(['success' => false, 'error' => 'Unauthorized'], 403);

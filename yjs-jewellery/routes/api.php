@@ -22,6 +22,16 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\Customer\CustomerProfileController;
+use App\Http\Controllers\Customer\CustomerOrderController;
+use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\Customer\CustomerPasswordController;
+use App\Http\Controllers\Customer\CheckoutController;
+use App\Http\Controllers\Partner\PartnerProfileController;
+use App\Http\Controllers\Partner\PartnerPasswordController;
+use App\Http\Controllers\Partner\PartnerOrderController;
+use App\Http\Controllers\Partner\PartnerDashboardController;
 
 
 /*
@@ -146,30 +156,193 @@ Route::prefix('customer')->group(function () {
     Route::get('/product/{id}', [ProductController::class, 'viewProduct']);
     Route::post('/products/relatedProducts', [ProductController::class, 'relatedProducts']);
 
+    // Public review routes
+    Route::get('/products/{productId}/reviews', [ReviewController::class, 'productReviews']);
+
+    // Public password routes
+    Route::post('/forgot-password', [CustomerPasswordController::class, 'forgotPassword']);
+    Route::post('/verify-reset-otp', [CustomerPasswordController::class, 'verifyResetOtp']);
+    Route::post('/reset-password', [CustomerPasswordController::class, 'resetPassword']);
+    Route::post('/login-password', [CustomerPasswordController::class, 'loginWithPassword']);
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'customerlogout']);
+
+        // Cart routes
         Route::get('/cart', [CartController::class, 'index']);
         Route::post('/cart', [CartController::class, 'store']);
+        Route::put('/cart/{id}', [CartController::class, 'update']);
+        Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+        Route::delete('/cart', [CartController::class, 'clear']);
         Route::post('/cart/sync', [CartController::class, 'syncFromLocalStorage']);
-        Route::get('/cartCount', [CartController::class, 'cartCount']);
+        Route::get('/cart/count', [CartController::class, 'cartCount']);
+
+        // Checkout routes
+        Route::get('/checkout/summary', [CheckoutController::class, 'getSummary']);
+        Route::post('/checkout/serviceability', [CheckoutController::class, 'checkServiceability']);
+        Route::post('/checkout/validate', [CheckoutController::class, 'validateCart']);
+        Route::post('/checkout/coupon', [CheckoutController::class, 'applyCoupon']);
+        Route::delete('/checkout/coupon', [CheckoutController::class, 'removeCoupon']);
+        Route::post('/checkout/order', [CheckoutController::class, 'createOrder']);
+
+        // Offer routes
+        Route::get('/offers/applicable', [App\Http\Controllers\OffersController::class, 'getApplicable']);
+        Route::post('/offers/apply', [App\Http\Controllers\OffersController::class, 'apply']);
+        Route::delete('/offers/remove', [App\Http\Controllers\OffersController::class, 'remove']);
+        Route::post('/offers/validate-coupon', [App\Http\Controllers\OffersController::class, 'validateCoupon']);
+
+        // Profile routes
+        Route::get('/profile', [CustomerProfileController::class, 'getProfile']);
+        Route::put('/profile', [CustomerProfileController::class, 'updateProfile']);
+        Route::post('/profile/avatar', [CustomerProfileController::class, 'uploadAvatar']);
+        Route::delete('/profile/avatar', [CustomerProfileController::class, 'removeAvatar']);
+
+        // Address routes
+        Route::get('/addresses', [CustomerProfileController::class, 'getAddresses']);
+        Route::get('/addresses/{id}', [CustomerProfileController::class, 'getAddress']);
+        Route::post('/addresses', [CustomerProfileController::class, 'storeAddress']);
+        Route::put('/addresses/{id}', [CustomerProfileController::class, 'updateAddress']);
+        Route::delete('/addresses/{id}', [CustomerProfileController::class, 'deleteAddress']);
+        Route::post('/addresses/{id}/default', [CustomerProfileController::class, 'setDefaultAddress']);
+
+        // Order routes
+        Route::get('/orders', [CustomerOrderController::class, 'index']);
+        Route::get('/orders/statistics', [CustomerOrderController::class, 'statistics']);
+        Route::get('/orders/{id}', [CustomerOrderController::class, 'show']);
+        Route::post('/orders/{id}/cancel', [CustomerOrderController::class, 'cancel']);
+        Route::get('/orders/{id}/tracking', [CustomerOrderController::class, 'tracking']);
+
+        // Wishlist routes
+        Route::get('/wishlists', [WishlistController::class, 'index']);
+        Route::post('/wishlists', [WishlistController::class, 'store']);
+        Route::delete('/wishlists/{id}', [WishlistController::class, 'destroy']);
+        Route::post('/wishlists/toggle', [WishlistController::class, 'toggle']);
+        Route::post('/wishlists/sync', [WishlistController::class, 'sync']);
+        Route::post('/wishlists/check', [WishlistController::class, 'check']);
+        Route::get('/wishlists/count', [WishlistController::class, 'count']);
+        Route::delete('/wishlists', [WishlistController::class, 'clear']);
+        Route::post('/wishlists/{id}/move-to-cart', [WishlistController::class, 'moveToCart']);
+
+        // Review routes
+        Route::get('/reviews', [ReviewController::class, 'myReviews']);
+        Route::get('/reviews/pending', [ReviewController::class, 'pendingReviews']);
+        Route::get('/reviews/{id}', [ReviewController::class, 'show']);
+        Route::post('/reviews', [ReviewController::class, 'store']);
+        Route::put('/reviews/{id}', [ReviewController::class, 'update']);
+        Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+        Route::get('/products/{productId}/can-review', [ReviewController::class, 'canReview']);
+
+        // Password routes (authenticated)
+        Route::get('/password/has-password', [CustomerPasswordController::class, 'hasPassword']);
+        Route::post('/password/set', [CustomerPasswordController::class, 'setPassword']);
+
+        // Payment routes
+        Route::post('/orders/{order}/payment', [App\Http\Controllers\OrderPaymentController::class, 'createPayment']);
+        Route::post('/payment/verify', [App\Http\Controllers\OrderPaymentController::class, 'verifyPayment']);
+        Route::get('/orders/{order}/payment-status', [App\Http\Controllers\OrderPaymentController::class, 'getStatus']);
+        Route::post('/orders/{order}/retry-payment', [App\Http\Controllers\OrderPaymentController::class, 'retryPayment']);
+
+        // Shipping routes
+        Route::get('/shipping/serviceability', [App\Http\Controllers\ShippingController::class, 'checkServiceability']);
+        Route::get('/orders/{order}/ship-tracking', [App\Http\Controllers\ShippingController::class, 'track']);
+        Route::post('/password/change', [CustomerPasswordController::class, 'changePassword']);
+
+        // Notification routes
+        Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [App\Http\Controllers\NotificationController::class, 'unreadCount']);
+        Route::post('/notifications/{id}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+        Route::delete('/notifications/{id}', [App\Http\Controllers\NotificationController::class, 'destroy']);
+        Route::delete('/notifications', [App\Http\Controllers\NotificationController::class, 'clearAll']);
+
+        // Invoice routes
+        Route::get('/orders/{order}/invoice', [App\Http\Controllers\InvoiceController::class, 'getInvoice']);
+        Route::get('/orders/{order}/invoice/html', [App\Http\Controllers\InvoiceController::class, 'getInvoiceHtml']);
+        Route::get('/orders/{order}/invoice/download', [App\Http\Controllers\InvoiceController::class, 'downloadInvoice']);
+
+        // Advanced Offer routes (using /promotions prefix to avoid conflict with existing /offers routes)
+        Route::prefix('promotions')->group(function () {
+            Route::get('/applicable', [App\Http\Controllers\Customer\CustomerOfferController::class, 'getApplicableOffers']);
+            Route::post('/validate-coupon', [App\Http\Controllers\Customer\CustomerOfferController::class, 'validateCoupon']);
+            Route::get('/flash-sales', [App\Http\Controllers\Customer\CustomerOfferController::class, 'getFlashSales']);
+            Route::get('/active', [App\Http\Controllers\Customer\CustomerOfferController::class, 'getActivePromotions']);
+            Route::get('/products-with-offers', [App\Http\Controllers\Customer\CustomerOfferController::class, 'getProductsWithOffers']);
+            Route::get('/{offerId}', [App\Http\Controllers\Customer\CustomerOfferController::class, 'getOfferDetails']);
+        });
+
+        // Loyalty routes
+        Route::prefix('loyalty')->group(function () {
+            Route::get('/dashboard', [App\Http\Controllers\Customer\CustomerLoyaltyController::class, 'getDashboard']);
+            Route::get('/balance', [App\Http\Controllers\Customer\CustomerLoyaltyController::class, 'getBalance']);
+            Route::get('/history', [App\Http\Controllers\Customer\CustomerLoyaltyController::class, 'getHistory']);
+            Route::post('/calculate', [App\Http\Controllers\Customer\CustomerLoyaltyController::class, 'calculatePoints']);
+            Route::post('/preview-redemption', [App\Http\Controllers\Customer\CustomerLoyaltyController::class, 'previewRedemption']);
+            Route::get('/tiers', [App\Http\Controllers\Customer\CustomerLoyaltyController::class, 'getTierBenefits']);
+            Route::get('/expiring', [App\Http\Controllers\Customer\CustomerLoyaltyController::class, 'getExpiringPoints']);
+            Route::get('/leaderboard', [App\Http\Controllers\Customer\CustomerLoyaltyController::class, 'getLeaderboard']);
+        });
+
+        // Referral routes
+        Route::prefix('referral')->group(function () {
+            Route::get('/dashboard', [App\Http\Controllers\Customer\CustomerReferralController::class, 'getDashboard']);
+            Route::get('/code', [App\Http\Controllers\Customer\CustomerReferralController::class, 'getReferralCode']);
+            Route::post('/validate', [App\Http\Controllers\Customer\CustomerReferralController::class, 'validateCode']);
+            Route::post('/apply', [App\Http\Controllers\Customer\CustomerReferralController::class, 'applyCode']);
+            Route::get('/discount', [App\Http\Controllers\Customer\CustomerReferralController::class, 'getRefereeDiscount']);
+            Route::post('/calculate-discount', [App\Http\Controllers\Customer\CustomerReferralController::class, 'calculateDiscount']);
+            Route::get('/share', [App\Http\Controllers\Customer\CustomerReferralController::class, 'getShareContent']);
+        });
     });
 });
 
 Route::prefix('partner')->group(function () {
+    // Public routes
     Route::post('/send-otp', [AuthController::class, 'sendOTP']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOTP']);
-    Route::post('partner-register', [PartnerController::class, 'store']);
+    Route::post('/register', [PartnerController::class, 'store']);
     Route::get('/states/{country_id}', [CommonController::class, 'getStates']);
     Route::get('/cities/{state_id}', [CommonController::class, 'getCities']);
 
-    
+    // Public password routes
+    Route::post('/forgot-password', [PartnerPasswordController::class, 'forgotPassword']);
+    Route::post('/verify-reset-otp', [PartnerPasswordController::class, 'verifyResetOtp']);
+    Route::post('/reset-password', [PartnerPasswordController::class, 'resetPassword']);
+    Route::post('/login-password', [PartnerPasswordController::class, 'loginWithPassword']);
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'partnerlogout']);
+
+        // Profile routes
+        Route::get('/profile', [PartnerProfileController::class, 'getProfile']);
+        Route::put('/profile', [PartnerProfileController::class, 'updateProfile']);
+        Route::post('/profile/avatar', [PartnerProfileController::class, 'uploadAvatar']);
+        Route::delete('/profile/avatar', [PartnerProfileController::class, 'removeAvatar']);
+        Route::get('/profile/approval-status', [PartnerProfileController::class, 'getApprovalStatus']);
+
+        // Password routes
+        Route::get('/password/has-password', [PartnerPasswordController::class, 'hasPassword']);
+        Route::post('/password/set', [PartnerPasswordController::class, 'setPassword']);
+        Route::post('/password/change', [PartnerPasswordController::class, 'changePassword']);
+
+        // Product routes
         Route::get('/products', [ProductController::class, 'partnerproductListing']);
         Route::get('/product/{id}', [ProductController::class, 'viewProduct']);
         Route::post('/products/relatedProducts', [ProductController::class, 'relatedProducts']);
         Route::get('/category/{name}', [CategoryController::class, 'getcategoryproducts']);
-        
+
+        // Order routes
+        Route::get('/orders', [PartnerOrderController::class, 'index']);
+        Route::get('/orders/statistics', [PartnerOrderController::class, 'statistics']);
+        Route::get('/orders/{id}', [PartnerOrderController::class, 'show']);
+        Route::post('/orders/{id}/cancel', [PartnerOrderController::class, 'cancel']);
+        Route::get('/orders/{id}/tracking', [PartnerOrderController::class, 'tracking']);
+        Route::post('/orders/{id}/reorder', [PartnerOrderController::class, 'reorder']);
+
+        // Dashboard routes
+        Route::get('/dashboard', [PartnerDashboardController::class, 'index']);
+        Route::get('/dashboard/order-analytics', [PartnerDashboardController::class, 'orderAnalytics']);
+        Route::get('/dashboard/spending-analytics', [PartnerDashboardController::class, 'spendingAnalytics']);
+        Route::get('/dashboard/frequent-products', [PartnerDashboardController::class, 'frequentProducts']);
     });
 });
 
@@ -190,26 +363,11 @@ Route::prefix('webhooks')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Customer Payment & Shipping Routes
+| Legacy Customer Payment & Shipping Routes (moved to sanctum group above)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:customer'])->prefix('customer')->group(function () {
-    // Offers
-    Route::get('/offers/applicable', [App\Http\Controllers\OffersController::class, 'getApplicable']);
-    Route::post('/offers/apply', [App\Http\Controllers\OffersController::class, 'apply']);
-    Route::delete('/offers/remove', [App\Http\Controllers\OffersController::class, 'remove']);
-    Route::post('/offers/validate-coupon', [App\Http\Controllers\OffersController::class, 'validateCoupon']);
-    
-    // Payments
-    Route::post('/orders/{order}/payment', [App\Http\Controllers\OrderPaymentController::class, 'createPayment']);
-    Route::post('/payment/verify', [App\Http\Controllers\OrderPaymentController::class, 'verifyPayment']);
-    Route::get('/orders/{order}/payment-status', [App\Http\Controllers\OrderPaymentController::class, 'getStatus']);
-    Route::post('/orders/{order}/retry-payment', [App\Http\Controllers\OrderPaymentController::class, 'retryPayment']);
-    
-    // Shipping
-    Route::get('/shipping/serviceability', [App\Http\Controllers\ShippingController::class, 'checkServiceability']);
-    Route::get('/orders/{order}/tracking', [App\Http\Controllers\ShippingController::class, 'track']);
-});
+// Note: Payment, Shipping, and Offers routes have been moved to the
+// auth:sanctum middleware group for consistency with other customer routes.
 
 /*
 |--------------------------------------------------------------------------
@@ -223,4 +381,106 @@ Route::middleware(['auth:employee'])->prefix('employee/orders/{order}')->group(f
     Route::get('/label', [App\Http\Controllers\ShippingController::class, 'getLabel']);
     Route::post('/cancel-shipment', [App\Http\Controllers\ShippingController::class, 'cancelShipment']);
     Route::post('/sync-tracking', [App\Http\Controllers\ShippingController::class, 'syncTracking']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin Order & Inventory Management Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+    // Dashboard & Reports
+    Route::get('/dashboard', [App\Http\Controllers\Admin\AdminDashboardController::class, 'overview']);
+    Route::get('/reports/sales', [App\Http\Controllers\Admin\AdminDashboardController::class, 'salesReport']);
+    Route::get('/reports/top-products', [App\Http\Controllers\Admin\AdminDashboardController::class, 'topProducts']);
+    Route::get('/reports/top-customers', [App\Http\Controllers\Admin\AdminDashboardController::class, 'topCustomers']);
+    Route::get('/reports/revenue-trends', [App\Http\Controllers\Admin\AdminDashboardController::class, 'revenueTrends']);
+    Route::get('/reports/export', [App\Http\Controllers\Admin\AdminDashboardController::class, 'exportReport']);
+    Route::get('/recent-orders', [App\Http\Controllers\Admin\AdminDashboardController::class, 'recentOrders']);
+    Route::get('/recent-activities', [App\Http\Controllers\Admin\AdminDashboardController::class, 'recentActivities']);
+
+    // Order Management
+    Route::get('/orders', [App\Http\Controllers\Admin\AdminOrderController::class, 'index']);
+    Route::get('/orders/statistics', [App\Http\Controllers\Admin\AdminOrderController::class, 'statistics']);
+    Route::get('/orders/{id}', [App\Http\Controllers\Admin\AdminOrderController::class, 'show']);
+    Route::put('/orders/{id}/status', [App\Http\Controllers\Admin\AdminOrderController::class, 'updateStatus']);
+    Route::post('/orders/{id}/refund', [App\Http\Controllers\Admin\AdminOrderController::class, 'processRefund']);
+    Route::post('/orders/{id}/note', [App\Http\Controllers\Admin\AdminOrderController::class, 'addNote']);
+
+    // Inventory Management
+    Route::get('/inventory', [App\Http\Controllers\Admin\AdminInventoryController::class, 'index']);
+    Route::get('/inventory/summary', [App\Http\Controllers\Admin\AdminInventoryController::class, 'summary']);
+    Route::get('/inventory/low-stock', [App\Http\Controllers\Admin\AdminInventoryController::class, 'lowStock']);
+    Route::get('/inventory/out-of-stock', [App\Http\Controllers\Admin\AdminInventoryController::class, 'outOfStock']);
+    Route::post('/inventory/{productId}/adjust', [App\Http\Controllers\Admin\AdminInventoryController::class, 'adjustStock']);
+    Route::put('/inventory/{productId}/stock', [App\Http\Controllers\Admin\AdminInventoryController::class, 'setStock']);
+    Route::post('/inventory/bulk-update', [App\Http\Controllers\Admin\AdminInventoryController::class, 'bulkUpdate']);
+    Route::get('/inventory/{productId}/history', [App\Http\Controllers\Admin\AdminInventoryController::class, 'stockHistory']);
+
+    // Offer Management
+    Route::get('/offers', [App\Http\Controllers\Admin\AdminOfferController::class, 'index']);
+    Route::get('/offers/summary', [App\Http\Controllers\Admin\AdminOfferController::class, 'summary']);
+    Route::get('/offers/types', [App\Http\Controllers\Admin\AdminOfferController::class, 'getOfferTypes']);
+    Route::post('/offers', [App\Http\Controllers\Admin\AdminOfferController::class, 'store']);
+    Route::get('/offers/{id}', [App\Http\Controllers\Admin\AdminOfferController::class, 'show']);
+    Route::put('/offers/{id}', [App\Http\Controllers\Admin\AdminOfferController::class, 'update']);
+    Route::delete('/offers/{id}', [App\Http\Controllers\Admin\AdminOfferController::class, 'destroy']);
+    Route::post('/offers/{id}/activate', [App\Http\Controllers\Admin\AdminOfferController::class, 'activate']);
+    Route::post('/offers/{id}/deactivate', [App\Http\Controllers\Admin\AdminOfferController::class, 'deactivate']);
+    Route::get('/offers/{id}/usage', [App\Http\Controllers\Admin\AdminOfferController::class, 'usage']);
+    Route::post('/offers/bulk-status', [App\Http\Controllers\Admin\AdminOfferController::class, 'bulkUpdateStatus']);
+
+    // Shipping Management
+    Route::get('/shipping/dashboard', [App\Http\Controllers\Admin\AdminShippingController::class, 'dashboard']);
+    Route::get('/shipping/pending', [App\Http\Controllers\Admin\AdminShippingController::class, 'pendingShipments']);
+    Route::get('/shipping/shipped', [App\Http\Controllers\Admin\AdminShippingController::class, 'shippedOrders']);
+    Route::get('/shipping/orders/{order}', [App\Http\Controllers\Admin\AdminShippingController::class, 'orderDetails']);
+    Route::post('/shipping/serviceability', [App\Http\Controllers\Admin\AdminShippingController::class, 'checkServiceability']);
+    Route::post('/shipping/bulk-push', [App\Http\Controllers\Admin\AdminShippingController::class, 'bulkPushToShiprocket']);
+    Route::post('/shipping/bulk-awb', [App\Http\Controllers\Admin\AdminShippingController::class, 'bulkGenerateAWB']);
+    Route::post('/shipping/bulk-pickup', [App\Http\Controllers\Admin\AdminShippingController::class, 'bulkSchedulePickup']);
+    Route::post('/shipping/bulk-sync', [App\Http\Controllers\Admin\AdminShippingController::class, 'bulkSyncTracking']);
+    Route::post('/shipping/bulk-labels', [App\Http\Controllers\Admin\AdminShippingController::class, 'bulkGetLabels']);
+
+    // Invoice Management
+    Route::get('/orders/{order}/invoice', [App\Http\Controllers\InvoiceController::class, 'adminGetInvoice']);
+    Route::get('/orders/{order}/invoice/download', [App\Http\Controllers\InvoiceController::class, 'adminDownloadInvoice']);
+    Route::post('/invoices/bulk', [App\Http\Controllers\InvoiceController::class, 'bulkGetInvoices']);
+
+    // Advanced Offer Management
+    Route::prefix('advanced-offers')->group(function () {
+        Route::get('/types', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'getOfferTypes']);
+        Route::post('/', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'create']);
+        Route::put('/{offer}', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'update']);
+        Route::get('/{offer}/analytics', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'getAnalytics']);
+        Route::post('/{offer}/duplicate', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'duplicate']);
+        Route::post('/bulk-status', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'bulkUpdateStatus']);
+
+        // Specialized offer creation
+        Route::post('/flash-sale', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'createFlashSale']);
+        Route::post('/combo', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'createCombo']);
+        Route::post('/bogo', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'createBogo']);
+        Route::post('/tiered', [App\Http\Controllers\Admin\AdminAdvancedOfferController::class, 'createTieredDiscount']);
+    });
+
+    // Loyalty Management
+    Route::prefix('loyalty')->group(function () {
+        Route::get('/statistics', [App\Http\Controllers\Admin\AdminLoyaltyController::class, 'statistics']);
+        Route::get('/users', [App\Http\Controllers\Admin\AdminLoyaltyController::class, 'users']);
+        Route::get('/users/{userId}', [App\Http\Controllers\Admin\AdminLoyaltyController::class, 'userDetails']);
+        Route::post('/users/{userId}/adjust', [App\Http\Controllers\Admin\AdminLoyaltyController::class, 'adjustPoints']);
+        Route::get('/tiers', [App\Http\Controllers\Admin\AdminLoyaltyController::class, 'tiers']);
+        Route::post('/tiers', [App\Http\Controllers\Admin\AdminLoyaltyController::class, 'createTier']);
+        Route::put('/tiers/{tier}', [App\Http\Controllers\Admin\AdminLoyaltyController::class, 'updateTier']);
+        Route::post('/process-expiry', [App\Http\Controllers\Admin\AdminLoyaltyController::class, 'processExpiredPoints']);
+    });
+
+    // Referral Management
+    Route::prefix('referrals')->group(function () {
+        Route::get('/statistics', [App\Http\Controllers\Admin\AdminReferralController::class, 'statistics']);
+        Route::get('/', [App\Http\Controllers\Admin\AdminReferralController::class, 'index']);
+        Route::get('/{referral}', [App\Http\Controllers\Admin\AdminReferralController::class, 'show']);
+        Route::post('/{referral}/cancel', [App\Http\Controllers\Admin\AdminReferralController::class, 'cancel']);
+        Route::post('/expire-pending', [App\Http\Controllers\Admin\AdminReferralController::class, 'expirePending']);
+    });
 });

@@ -2,14 +2,43 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
+/**
+ * Cart Model
+ *
+ * Represents a shopping cart item with product, quantity,
+ * pricing calculations, and offer tracking.
+ *
+ * @package App\Models
+ */
 class Cart extends Model
 {
-    use SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'user_id',
+        'product_id',
+        'quantity',
+        'product_base_price',
+        'charges_total',
+        'tax_total',
+        'total_discount',
+        'final_price',
+        'cart_total',
+        'applied_offers',
+        'selected_free_products',
+        'estimated_delivery',
+    ];
 
     protected $table = 'carts';
 

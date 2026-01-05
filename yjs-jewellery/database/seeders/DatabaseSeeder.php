@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             menuSeeder::class,
             permissionSeeder::class,
             AttributeOptionSeeder::class,
+            OfferTypeMasterSeeder::class,
+            LoyaltyTierSeeder::class,
         ]);
 
     }

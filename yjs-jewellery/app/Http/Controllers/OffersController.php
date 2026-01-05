@@ -23,7 +23,7 @@ class OffersController extends Controller
      */
     public function getApplicable(): JsonResponse
     {
-        $userId = auth('customer')->id();
+        $userId = auth()->id();
         
         // Get cart items
         $cartItems = Cart::with('product')
@@ -60,7 +60,7 @@ class OffersController extends Controller
             'coupon_code' => 'nullable|string|max:50',
         ]);
 
-        $userId = auth('customer')->id();
+        $userId = auth()->id();
         
         // Get cart
         $cartItems = Cart::with('product')
@@ -107,7 +107,7 @@ class OffersController extends Controller
      */
     public function remove(): JsonResponse
     {
-        $userId = auth('customer')->id();
+        $userId = auth()->id();
         
         Cart::where('user_id', $userId)
             ->whereNull('deleted_at')
@@ -129,7 +129,7 @@ class OffersController extends Controller
             'coupon_code' => 'required|string|max:50',
         ]);
 
-        $userId = auth('customer')->id();
+        $userId = auth()->id();
         
         // Get cart
         $cartItems = Cart::with('product')

@@ -7,10 +7,11 @@ use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Customer extends Model
 {
-    use HasApiTokens,SoftDeletes, LogsActivity;
+    use HasApiTokens, SoftDeletes, LogsActivity, HasFactory;
 
     protected $table = 'customers';
 

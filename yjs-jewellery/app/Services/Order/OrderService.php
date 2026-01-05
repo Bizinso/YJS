@@ -53,9 +53,10 @@ class OrderService
         foreach ($cartItems as $item) {
             $product = Product::find($item->product_id);
             if (!$product || $product->available_stock < $item->quantity) {
+                $productName = $product?->name ?? 'product';
                 return [
-                    'success' => false, 
-                    'error' => "Insufficient stock for {$product->name ?? 'product'}"
+                    'success' => false,
+                    'error' => "Insufficient stock for {$productName}"
                 ];
             }
         }

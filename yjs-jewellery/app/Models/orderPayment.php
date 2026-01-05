@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * ENHANCED OrderPayment Model
- * 
+ *
  * PRESERVES existing fields: order_id, payment_mode, transaction_id, amount, status
  * ADDS new Razorpay integration fields
  */
 class OrderPayment extends Model
 {
+    use HasFactory;
     protected $table = 'order_payments';
 
     protected $fillable = [

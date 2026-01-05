@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
-use Illuminate\Database\Eloquent\SoftDeletes;
-class review extends Model
+
+class Review extends Model
 {
-    use SoftDeletes, LogsActivity;
+    use LogsActivity, HasFactory;
 
     protected $table = 'reviews';
 
@@ -21,6 +22,10 @@ class review extends Model
         'status',
     ];
 
+    protected $casts = [
+        'rating' => 'integer',
+    ];
+
     /**
      * Spatie activity log configuration
      */
@@ -28,9 +33,70 @@ class review extends Model
     {
         return LogOptions::defaults()
             ->useLogName('review')
-            ->logAll()                       // log all attributes
-            ->logOnlyDirty()                 // only log changes
-            ->dontSubmitEmptyLogs()          // skip empty logs
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
             ->setDescriptionForEvent(fn(string $event) => "Review has been {$event}");
+    }
+
+    /**
+     * Get the user who wrote the review.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the product being reviewed.
+     */
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Get the order associated with the review.
+     */
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Scope for approved reviews.
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    /**
+     * Scope for pending reviews.
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Check if review is approved.
+     */
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    /**
+     * Get status label for display.
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'approved' => 'Approved',
+            'pending' => 'Pending Review',
+            'rejected' => 'Rejected',
+            default => ucfirst($this->status),
+        };
     }
 }
