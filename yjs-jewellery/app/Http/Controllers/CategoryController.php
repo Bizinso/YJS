@@ -339,8 +339,8 @@ class CategoryController extends Controller
                 }
             })
 
-            // ✅ Required columns only
-            ->select([
+            // ✅ Required columns - B2B partners don't see prices
+            ->select(array_filter([
                 'products.id',
                 'products.name',
                 'products.sku',
@@ -348,11 +348,14 @@ class CategoryController extends Controller
                 'products.description',
                 'products.category_id',
                 'products.sub_category_id',
-                'products.base_price',
-                'products.final_price',
+                // Only include prices for customers, not partners
+                ($user && $user->user_type === 'partner') ? null : 'products.base_price',
+                ($user && $user->user_type === 'partner') ? null : 'products.final_price',
                 'products.main_image',
                 'products.tags_id',
-            ])
+                'products.metal_weight',
+                'products.available_stock',
+            ]))
 
             ->orderByDesc('products.id')
             ->get();
@@ -361,10 +364,14 @@ class CategoryController extends Controller
                     ->where('status', 'A')
                     ->first();
 
+        $isPartner = $user && $user->user_type === 'partner';
+
         return response()->json([
             'success'  => true,
             'category' => $category,
             'products' => $products,
+            'is_b2b' => $isPartner,
+            'message' => $isPartner ? 'Create an inquiry to get custom pricing for bulk orders.' : null,
         ]);
     }
 

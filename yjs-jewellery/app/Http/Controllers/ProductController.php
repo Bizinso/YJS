@@ -2749,6 +2749,8 @@ class ProductController extends Controller
                         }
                     })
 
+                    // B2B: Partners see products WITHOUT pricing
+                    // They create inquiries and admin provides custom quotes
                     ->select([
                         'products.id',
                         'products.name',
@@ -2757,17 +2759,18 @@ class ProductController extends Controller
                         'products.description',
                         'products.category_id',
                         'products.sub_category_id',
-                        'products.base_price',
-                        'products.final_price',
                         'products.main_image',
                         'products.tags_id',
+                        'products.metal_weight',
+                        'products.available_stock',
                     ]);
             })
             ->get();
 
         return response()->json([
             'success' => true,
-            'data' => $subcategories
+            'data' => $subcategories,
+            'message' => 'Create an inquiry to get custom pricing for bulk orders.',
         ]);
     }
 

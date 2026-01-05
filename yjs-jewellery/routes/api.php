@@ -343,6 +343,22 @@ Route::prefix('partner')->group(function () {
         Route::get('/dashboard/order-analytics', [PartnerDashboardController::class, 'orderAnalytics']);
         Route::get('/dashboard/spending-analytics', [PartnerDashboardController::class, 'spendingAnalytics']);
         Route::get('/dashboard/frequent-products', [PartnerDashboardController::class, 'frequentProducts']);
+
+        // B2B Inquiry routes (Bulk Order Requests)
+        Route::prefix('inquiries')->group(function () {
+            Route::get('/', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'index']);
+            Route::get('/statistics', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'statistics']);
+            Route::post('/', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'store']);
+            Route::get('/{id}', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'show']);
+            Route::put('/{id}', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'update']);
+            Route::post('/{id}/items', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'addItem']);
+            Route::delete('/{id}/items/{itemId}', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'removeItem']);
+            Route::post('/{id}/accept-quote', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'acceptQuote']);
+            Route::post('/{id}/reject-quote', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'rejectQuote']);
+            Route::post('/{id}/cancel', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'cancel']);
+            Route::post('/{id}/message', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'sendMessage']);
+            Route::get('/{id}/tracking', [App\Http\Controllers\Partner\PartnerInquiryController::class, 'tracking']);
+        });
     });
 });
 
@@ -482,5 +498,22 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
         Route::get('/{referral}', [App\Http\Controllers\Admin\AdminReferralController::class, 'show']);
         Route::post('/{referral}/cancel', [App\Http\Controllers\Admin\AdminReferralController::class, 'cancel']);
         Route::post('/expire-pending', [App\Http\Controllers\Admin\AdminReferralController::class, 'expirePending']);
+    });
+
+    // Partner Inquiry Management (B2B)
+    Route::prefix('partner-inquiries')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'dashboard']);
+        Route::get('/', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'index']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'show']);
+        Route::post('/{id}/start-review', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'startReview']);
+        Route::post('/{id}/quote', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'provideQuote']);
+        Route::post('/{id}/reject', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'reject']);
+        Route::put('/{id}/status', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'updateStatus']);
+        Route::post('/{id}/payment', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'recordPayment']);
+        Route::put('/{id}/items/{itemId}/fulfillment', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'updateItemFulfillment']);
+        Route::post('/{id}/message', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'sendMessage']);
+        Route::post('/{id}/tracking', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'addTrackingUpdate']);
+        Route::put('/{id}/notes', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'updateNotes']);
+        Route::post('/bulk-status', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'bulkUpdateStatus']);
     });
 });
