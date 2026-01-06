@@ -292,6 +292,39 @@ Route::prefix('customer')->group(function () {
             Route::post('/calculate-discount', [App\Http\Controllers\Customer\CustomerReferralController::class, 'calculateDiscount']);
             Route::get('/share', [App\Http\Controllers\Customer\CustomerReferralController::class, 'getShareContent']);
         });
+
+        // Return Request routes
+        Route::prefix('returns')->group(function () {
+            Route::get('/policy', [App\Http\Controllers\Customer\ReturnController::class, 'getPolicy']);
+            Route::get('/', [App\Http\Controllers\Customer\ReturnController::class, 'index']);
+            Route::post('/', [App\Http\Controllers\Customer\ReturnController::class, 'store']);
+            Route::get('/eligibility/{orderId}', [App\Http\Controllers\Customer\ReturnController::class, 'checkEligibility']);
+            Route::get('/{id}', [App\Http\Controllers\Customer\ReturnController::class, 'show']);
+            Route::post('/{id}/cancel', [App\Http\Controllers\Customer\ReturnController::class, 'cancel']);
+            Route::get('/{id}/tracking', [App\Http\Controllers\Customer\ReturnController::class, 'tracking']);
+        });
+
+        // Exchange Request routes
+        Route::prefix('exchanges')->group(function () {
+            Route::get('/policy', [App\Http\Controllers\Customer\ExchangeController::class, 'getPolicy']);
+            Route::get('/', [App\Http\Controllers\Customer\ExchangeController::class, 'index']);
+            Route::post('/', [App\Http\Controllers\Customer\ExchangeController::class, 'store']);
+            Route::get('/eligibility/{orderId}', [App\Http\Controllers\Customer\ExchangeController::class, 'checkEligibility']);
+            Route::get('/options/{productId}', [App\Http\Controllers\Customer\ExchangeController::class, 'getExchangeOptions']);
+            Route::get('/{id}', [App\Http\Controllers\Customer\ExchangeController::class, 'show']);
+            Route::post('/{id}/cancel', [App\Http\Controllers\Customer\ExchangeController::class, 'cancel']);
+            Route::get('/{id}/tracking', [App\Http\Controllers\Customer\ExchangeController::class, 'tracking']);
+        });
+
+        // Cancellation Request routes
+        Route::prefix('cancellations')->group(function () {
+            Route::get('/policy', [App\Http\Controllers\Customer\CancellationController::class, 'getPolicy']);
+            Route::get('/', [App\Http\Controllers\Customer\CancellationController::class, 'index']);
+            Route::post('/', [App\Http\Controllers\Customer\CancellationController::class, 'store']);
+            Route::get('/eligibility/{orderId}', [App\Http\Controllers\Customer\CancellationController::class, 'checkEligibility']);
+            Route::get('/{id}', [App\Http\Controllers\Customer\CancellationController::class, 'show']);
+            Route::get('/{id}/tracking', [App\Http\Controllers\Customer\CancellationController::class, 'tracking']);
+        });
     });
 });
 
@@ -515,5 +548,65 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
         Route::post('/{id}/tracking', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'addTrackingUpdate']);
         Route::put('/{id}/notes', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'updateNotes']);
         Route::post('/bulk-status', [App\Http\Controllers\Admin\AdminPartnerInquiryController::class, 'bulkUpdateStatus']);
+    });
+
+    // Return Policy Settings
+    Route::prefix('return-policy')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminReturnPolicyController::class, 'index']);
+        Route::put('/', [App\Http\Controllers\Admin\AdminReturnPolicyController::class, 'update']);
+        Route::get('/default-reasons/{type}', [App\Http\Controllers\Admin\AdminReturnPolicyController::class, 'getDefaultReasons']);
+        Route::post('/reset', [App\Http\Controllers\Admin\AdminReturnPolicyController::class, 'reset']);
+    });
+
+    // Return Request Management
+    Route::prefix('returns')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminReturnController::class, 'dashboard']);
+        Route::get('/', [App\Http\Controllers\Admin\AdminReturnController::class, 'index']);
+        Route::get('/export', [App\Http\Controllers\Admin\AdminReturnController::class, 'export']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminReturnController::class, 'show']);
+        Route::post('/{id}/start-review', [App\Http\Controllers\Admin\AdminReturnController::class, 'startReview']);
+        Route::post('/{id}/approve', [App\Http\Controllers\Admin\AdminReturnController::class, 'approve']);
+        Route::post('/{id}/reject', [App\Http\Controllers\Admin\AdminReturnController::class, 'reject']);
+        Route::post('/{id}/schedule-pickup', [App\Http\Controllers\Admin\AdminReturnController::class, 'schedulePickup']);
+        Route::post('/{id}/mark-picked-up', [App\Http\Controllers\Admin\AdminReturnController::class, 'markPickedUp']);
+        Route::post('/{id}/mark-received', [App\Http\Controllers\Admin\AdminReturnController::class, 'markReceived']);
+        Route::post('/{id}/inspection', [App\Http\Controllers\Admin\AdminReturnController::class, 'recordInspection']);
+        Route::post('/{id}/initiate-refund', [App\Http\Controllers\Admin\AdminReturnController::class, 'initiateRefund']);
+        Route::post('/{id}/complete-refund', [App\Http\Controllers\Admin\AdminReturnController::class, 'completeRefund']);
+        Route::put('/{id}/notes', [App\Http\Controllers\Admin\AdminReturnController::class, 'updateNotes']);
+        Route::post('/bulk-status', [App\Http\Controllers\Admin\AdminReturnController::class, 'bulkUpdateStatus']);
+    });
+
+    // Exchange Request Management
+    Route::prefix('exchanges')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminExchangeController::class, 'dashboard']);
+        Route::get('/', [App\Http\Controllers\Admin\AdminExchangeController::class, 'index']);
+        Route::get('/export', [App\Http\Controllers\Admin\AdminExchangeController::class, 'export']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminExchangeController::class, 'show']);
+        Route::post('/{id}/start-review', [App\Http\Controllers\Admin\AdminExchangeController::class, 'startReview']);
+        Route::post('/{id}/approve', [App\Http\Controllers\Admin\AdminExchangeController::class, 'approve']);
+        Route::post('/{id}/reject', [App\Http\Controllers\Admin\AdminExchangeController::class, 'reject']);
+        Route::put('/{id}/status', [App\Http\Controllers\Admin\AdminExchangeController::class, 'updateStatus']);
+        Route::post('/{id}/mark-return-received', [App\Http\Controllers\Admin\AdminExchangeController::class, 'markReturnReceived']);
+        Route::post('/{id}/process', [App\Http\Controllers\Admin\AdminExchangeController::class, 'processExchange']);
+        Route::post('/{id}/ship', [App\Http\Controllers\Admin\AdminExchangeController::class, 'ship']);
+        Route::post('/{id}/mark-delivered', [App\Http\Controllers\Admin\AdminExchangeController::class, 'markDelivered']);
+        Route::post('/{id}/payment-adjustment', [App\Http\Controllers\Admin\AdminExchangeController::class, 'recordPaymentAdjustment']);
+        Route::put('/{id}/notes', [App\Http\Controllers\Admin\AdminExchangeController::class, 'updateNotes']);
+    });
+
+    // Cancellation Request Management
+    Route::prefix('cancellations')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminCancellationController::class, 'dashboard']);
+        Route::get('/', [App\Http\Controllers\Admin\AdminCancellationController::class, 'index']);
+        Route::get('/export', [App\Http\Controllers\Admin\AdminCancellationController::class, 'export']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminCancellationController::class, 'show']);
+        Route::post('/{id}/start-review', [App\Http\Controllers\Admin\AdminCancellationController::class, 'startReview']);
+        Route::post('/{id}/approve', [App\Http\Controllers\Admin\AdminCancellationController::class, 'approve']);
+        Route::post('/{id}/reject', [App\Http\Controllers\Admin\AdminCancellationController::class, 'reject']);
+        Route::post('/{id}/initiate-refund', [App\Http\Controllers\Admin\AdminCancellationController::class, 'initiateRefund']);
+        Route::post('/{id}/complete-refund', [App\Http\Controllers\Admin\AdminCancellationController::class, 'completeRefund']);
+        Route::put('/{id}/notes', [App\Http\Controllers\Admin\AdminCancellationController::class, 'updateNotes']);
+        Route::post('/bulk-status', [App\Http\Controllers\Admin\AdminCancellationController::class, 'bulkUpdateStatus']);
     });
 });
