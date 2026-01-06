@@ -94,6 +94,10 @@ import FlashSales from '../views/frontend/FlashSales.vue'
 import Promotions from '../views/frontend/Promotions.vue'
 import LoyaltyDashboard from '../views/frontend/LoyaltyDashboard.vue'
 import ReferralDashboard from '../views/frontend/ReferralDashboard.vue'
+import CustomerReturns from '../views/frontend/CustomerReturns.vue'
+
+// Partner Views
+import PartnerInquiries from '../views/partner/PartnerInquiries.vue'
 
 // New Admin Views
 import WarehouseManagement from '../views/admin/warehouse/WarehouseManagement.vue'
@@ -101,6 +105,8 @@ import TaxRules from '../views/admin/tax/TaxRules.vue'
 import ReportsDashboard from '../views/admin/reports/ReportsDashboard.vue'
 import OrderManagement from '../views/admin/orders/OrderManagement.vue'
 import ReturnsExchanges from '../views/admin/returns/ReturnsExchanges.vue'
+import AdminReturns from '../views/admin/returns/AdminReturns.vue'
+import AdminPartnerInquiries from '../views/admin/partner/AdminPartnerInquiries.vue'
 import FinanceDashboard from '../views/admin/finance/FinanceDashboard.vue'
 import SupportTickets from '../views/admin/support/SupportTickets.vue'
 import UserManagement from '../views/admin/users/UserManagement.vue'
@@ -129,6 +135,7 @@ const routes = [
   { path: '/promotions', name: 'promotions', component: Promotions, meta: { requiresAuth: false, layout: 'full', title: "Promotions & Offers" } },
   { path: '/loyalty', name: 'loyalty', component: LoyaltyDashboard, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "Loyalty Rewards" } },
   { path: '/referrals', name: 'referrals', component: ReferralDashboard, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "Referral Program" } },
+  { path: '/my-returns', name: 'customerReturns', component: CustomerReturns, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "My Returns" } },
 
   // -------------------------
   // Partner
@@ -137,6 +144,7 @@ const routes = [
   { path: '/partner/:categoryname', name: 'productsSelected', component: ProductsSelectedIndex, meta: { requiresAuth: false, layout: 'full', title: "Selected Products" } },
   { path: '/partner/product/:id', name: 'partnerproductsDetails', component: ProductsDetails, meta: { requiresAuth: false, layout: 'full', title: "Product Details" } },
   { path: '/partner/register', name: 'RegisterPartner', component: RegisterPartner, meta: { requiresAuth: false, layout: 'full', title: "Register Partner" } },
+  { path: '/partner/inquiries', name: 'partnerInquiries', component: PartnerInquiries, meta: { requiresAuth: true, authType: 'partner', layout: 'full', title: "My Inquiries" } },
 
   // -------------------------
   // ADMIN AUTH ROUTES
@@ -183,6 +191,10 @@ const routes = [
 
   // Returns & Exchanges
   { path: '/admin/returns', name: 'admin.returns', component: ReturnsExchanges, meta: { requiresAuth: true, title: "Returns & Exchanges", parent: "Orders" } },
+  { path: '/admin/returns-management', name: 'admin.returns-management', component: AdminReturns, meta: { requiresAuth: true, title: "Returns Management", parent: "Orders" } },
+
+  // Partner Inquiries (Admin)
+  { path: '/admin/partner-inquiries', name: 'admin.partner-inquiries', component: AdminPartnerInquiries, meta: { requiresAuth: true, title: "Partner Inquiries", parent: "Partners" } },
 
   // Finance
   { path: '/admin/finance', name: 'admin.finance', component: FinanceDashboard, meta: { requiresAuth: true, title: "Finance Dashboard", parent: "Finance" } },
