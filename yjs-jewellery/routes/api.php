@@ -765,4 +765,38 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
 
     // Permission Management
     Route::get('/permissions', [App\Http\Controllers\Admin\AdminUserController::class, 'permissions']);
+
+    // Reports & Analytics (extended features - base sales/revenue reports are in AdminDashboardController)
+    Route::prefix('reports')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminReportController::class, 'dashboard']);
+        Route::get('/products-performance', [App\Http\Controllers\Admin\AdminReportController::class, 'productsReport']);
+        Route::get('/customers-analysis', [App\Http\Controllers\Admin\AdminReportController::class, 'customersReport']);
+        Route::get('/inventory-status', [App\Http\Controllers\Admin\AdminReportController::class, 'inventoryReport']);
+        Route::get('/returns-analysis', [App\Http\Controllers\Admin\AdminReportController::class, 'returnsReport']);
+
+        // Saved Reports
+        Route::get('/saved', [App\Http\Controllers\Admin\AdminReportController::class, 'savedReports']);
+        Route::post('/saved', [App\Http\Controllers\Admin\AdminReportController::class, 'saveReport']);
+        Route::delete('/saved/{id}', [App\Http\Controllers\Admin\AdminReportController::class, 'deleteSavedReport']);
+
+        // Scheduled Reports
+        Route::get('/scheduled', [App\Http\Controllers\Admin\AdminReportController::class, 'scheduledReports']);
+        Route::post('/scheduled', [App\Http\Controllers\Admin\AdminReportController::class, 'createScheduledReport']);
+        Route::put('/scheduled/{id}', [App\Http\Controllers\Admin\AdminReportController::class, 'updateScheduledReport']);
+        Route::delete('/scheduled/{id}', [App\Http\Controllers\Admin\AdminReportController::class, 'deleteScheduledReport']);
+
+        // Export History
+        Route::get('/exports', [App\Http\Controllers\Admin\AdminReportController::class, 'exportHistory']);
+
+        // Daily Snapshots
+        Route::get('/snapshots', [App\Http\Controllers\Admin\AdminReportController::class, 'snapshots']);
+        Route::post('/snapshots', [App\Http\Controllers\Admin\AdminReportController::class, 'generateSnapshot']);
+    });
+
+    // Audit Logs
+    Route::prefix('audit')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminReportController::class, 'auditLogs']);
+        Route::get('/summary', [App\Http\Controllers\Admin\AdminReportController::class, 'auditSummary']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminReportController::class, 'auditLogDetail']);
+    });
 });
