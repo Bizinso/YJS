@@ -29,6 +29,18 @@ class Order extends Model
         'shipping_charges',
         'notes',
         'order_status',
+        'is_on_hold',
+        'hold_reason_code',
+        'hold_since',
+        'fulfillment_status',
+        'total_shipments',
+        'is_split_shipment',
+        'confirmed_at',
+        'processing_started_at',
+        'shipped_at',
+        'delivered_at',
+        'priority',
+        'tags',
         'payment_status',
         'gst_applied',
         'gst_percentage',
@@ -54,6 +66,11 @@ class Order extends Model
         'order_date' => 'date',
         'delivery_date' => 'date',
         'pickup_scheduled_date' => 'datetime',
+        'hold_since' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'processing_started_at' => 'datetime',
+        'shipped_at' => 'datetime',
+        'delivered_at' => 'datetime',
         'shipping_charges' => 'decimal:2',
         'gst_percentage' => 'decimal:2',
         'total_summary' => 'decimal:2',
@@ -62,6 +79,9 @@ class Order extends Model
         'order_subtotal' => 'decimal:2',
         'order_total' => 'decimal:2',
         'add_to_cart' => 'boolean',
+        'is_on_hold' => 'boolean',
+        'is_split_shipment' => 'boolean',
+        'tags' => 'array',
     ];
 
     // Activity Log configuration
@@ -142,6 +162,51 @@ class Order extends Model
     public function cancellation()
     {
         return $this->hasOne(OrderCancellation::class, 'order_id');
+    }
+
+    public function timeline()
+    {
+        return $this->hasMany(OrderTimeline::class, 'order_id')->orderBy('created_at', 'desc');
+    }
+
+    public function shipments()
+    {
+        return $this->hasMany(OrderShipment::class, 'order_id');
+    }
+
+    public function fulfillments()
+    {
+        return $this->hasMany(OrderFulfillment::class, 'order_id');
+    }
+
+    public function holds()
+    {
+        return $this->hasMany(OrderHold::class, 'order_id');
+    }
+
+    public function activeHold()
+    {
+        return $this->hasOne(OrderHold::class, 'order_id')->where('status', 'active');
+    }
+
+    public function overrides()
+    {
+        return $this->hasMany(OrderOverride::class, 'order_id');
+    }
+
+    public function returnRequests()
+    {
+        return $this->hasMany(ReturnRequest::class, 'order_id');
+    }
+
+    public function exchangeRequests()
+    {
+        return $this->hasMany(ExchangeRequest::class, 'order_id');
+    }
+
+    public function cancellationRequests()
+    {
+        return $this->hasMany(CancellationRequest::class, 'order_id');
     }
 
     /**

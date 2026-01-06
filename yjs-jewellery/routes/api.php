@@ -799,4 +799,125 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
         Route::get('/summary', [App\Http\Controllers\Admin\AdminReportController::class, 'auditSummary']);
         Route::get('/{id}', [App\Http\Controllers\Admin\AdminReportController::class, 'auditLogDetail']);
     });
+
+    // Product Bulk Operations
+    Route::prefix('products/bulk')->group(function () {
+        // Import/Export
+        Route::get('/import-template', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'getImportTemplate']);
+        Route::post('/import/upload', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'uploadImport']);
+        Route::post('/import/{jobId}/process', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'processImport']);
+        Route::get('/import/{jobId}/status', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'importStatus']);
+        Route::get('/import/jobs', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'importJobs']);
+        Route::post('/export', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'export']);
+
+        // Bulk Price Updates
+        Route::post('/price/preview', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'previewPriceUpdate']);
+        Route::post('/price/apply', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'applyPriceUpdate']);
+        Route::get('/price/history', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'priceUpdateHistory']);
+
+        // Bulk Status Updates
+        Route::post('/status', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'bulkStatusUpdate']);
+
+        // Bulk SEO
+        Route::post('/seo/generate', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'bulkGenerateSeo']);
+    });
+
+    // Product SEO
+    Route::get('/products/{productId}/seo', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'getSeo']);
+    Route::put('/products/{productId}/seo', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'updateSeo']);
+
+    // Product Media Reordering
+    Route::put('/products/{productId}/media/reorder', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'reorderMedia']);
+
+    // Product Cloning
+    Route::post('/products/{productId}/clone', [App\Http\Controllers\Admin\AdminProductBulkController::class, 'cloneProduct']);
+
+    // Tax Rules Engine
+    Route::prefix('tax')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'dashboard']);
+        Route::post('/calculate', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'calculateTax']);
+
+        // Tax Zones
+        Route::get('/zones', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'zones']);
+        Route::post('/zones', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'createZone']);
+        Route::put('/zones/{id}', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'updateZone']);
+        Route::delete('/zones/{id}', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'deleteZone']);
+
+        // Tax Rules
+        Route::get('/rules', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'rules']);
+        Route::get('/rules/{id}', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'showRule']);
+        Route::post('/rules', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'createRule']);
+        Route::put('/rules/{id}', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'updateRule']);
+        Route::delete('/rules/{id}', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'deleteRule']);
+        Route::get('/rules/{id}/history', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'rateHistory']);
+
+        // Tax Exemptions
+        Route::get('/exemptions', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'exemptions']);
+        Route::get('/exemptions/{id}', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'showExemption']);
+        Route::post('/exemptions', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'createExemption']);
+        Route::post('/exemptions/{id}/approve', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'approveExemption']);
+        Route::post('/exemptions/{id}/reject', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'rejectExemption']);
+        Route::delete('/exemptions/{id}', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'deleteExemption']);
+
+        // HSN Codes
+        Route::get('/hsn', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'hsnCodes']);
+        Route::get('/hsn/search', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'searchHsnCodes']);
+        Route::post('/hsn', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'createHsnCode']);
+        Route::put('/hsn/{id}', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'updateHsnCode']);
+        Route::delete('/hsn/{id}', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'deleteHsnCode']);
+        Route::post('/hsn/import', [App\Http\Controllers\Admin\AdminTaxRulesController::class, 'importHsnCodes']);
+    });
+
+    // Warehouse & Inventory Management
+    Route::prefix('warehouse')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'dashboard']);
+
+        // Warehouses
+        Route::get('/', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'warehouses']);
+        Route::post('/', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'createWarehouse']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'showWarehouse']);
+        Route::put('/{id}', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'updateWarehouse']);
+        Route::delete('/{id}', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'deleteWarehouse']);
+
+        // Stock per warehouse
+        Route::get('/{warehouseId}/stock', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'stock']);
+        Route::post('/{warehouseId}/stock', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'updateStock']);
+        Route::post('/{warehouseId}/stock/bulk', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'bulkUpdateStock']);
+        Route::get('/{warehouseId}/stock/{productId}/history', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'stockHistory']);
+    });
+
+    // Stock Transfers
+    Route::prefix('transfers')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'transfers']);
+        Route::post('/', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'createTransfer']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'showTransfer']);
+        Route::post('/{id}/approve', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'approveTransfer']);
+        Route::post('/{id}/ship', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'shipTransfer']);
+        Route::post('/{id}/receive', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'receiveTransfer']);
+        Route::post('/{id}/cancel', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'cancelTransfer']);
+    });
+
+    // Inventory Counts
+    Route::prefix('inventory-counts')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'counts']);
+        Route::post('/', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'createCount']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'showCount']);
+        Route::post('/{id}/start', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'startCount']);
+        Route::post('/{countId}/items/{itemId}', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'recordCountItem']);
+        Route::post('/{id}/complete', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'completeCount']);
+        Route::post('/{id}/cancel', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'cancelCount']);
+    });
+
+    // Stock Alerts
+    Route::prefix('stock-alerts')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'alerts']);
+        Route::post('/{id}/acknowledge', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'acknowledgeAlert']);
+        Route::post('/bulk-acknowledge', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'bulkAcknowledgeAlerts']);
+    });
+
+    // Stock Reservations
+    Route::prefix('reservations')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'reservations']);
+        Route::post('/expire-old', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'expireReservations']);
+    });
 });
