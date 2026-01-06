@@ -89,6 +89,12 @@ import Cart from '../views/frontend/Cart.vue'
 import DeliveryAddress from '../views/frontend/DeliveryAddress.vue'
 import OrderSuccess from '../views/frontend/OrderSuccess.vue'
 
+// Customer Views
+import FlashSales from '../views/frontend/FlashSales.vue'
+import Promotions from '../views/frontend/Promotions.vue'
+import LoyaltyDashboard from '../views/frontend/LoyaltyDashboard.vue'
+import ReferralDashboard from '../views/frontend/ReferralDashboard.vue'
+
 // New Admin Views
 import WarehouseManagement from '../views/admin/warehouse/WarehouseManagement.vue'
 import TaxRules from '../views/admin/tax/TaxRules.vue'
@@ -117,6 +123,12 @@ const routes = [
   { path: '/cart', name: 'cart', component: Cart, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "My Cart" } },
   { path: '/delivery-address', name: 'deliveryAddress', component: DeliveryAddress, meta: { requiresAuth: false, layout: 'full', title: "Delivery Address" } },
   { path: '/order-success', name: 'OrderSuccess', component: OrderSuccess, meta: { requiresAuth: false, layout: 'full', title: "Order Success" } },
+
+  // Customer Features
+  { path: '/flash-sales', name: 'flashSales', component: FlashSales, meta: { requiresAuth: false, layout: 'full', title: "Flash Sales" } },
+  { path: '/promotions', name: 'promotions', component: Promotions, meta: { requiresAuth: false, layout: 'full', title: "Promotions & Offers" } },
+  { path: '/loyalty', name: 'loyalty', component: LoyaltyDashboard, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "Loyalty Rewards" } },
+  { path: '/referrals', name: 'referrals', component: ReferralDashboard, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "Referral Program" } },
 
   // -------------------------
   // Partner
