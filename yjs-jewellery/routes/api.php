@@ -656,4 +656,33 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\AdminFinanceController::class, 'settlements']);
         Route::post('/reconcile', [App\Http\Controllers\Admin\AdminFinanceController::class, 'reconcile']);
     });
+
+    // Support Tickets
+    Route::prefix('tickets')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminSupportController::class, 'tickets']);
+        Route::get('/stats', [App\Http\Controllers\Admin\AdminSupportController::class, 'ticketStats']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminSupportController::class, 'showTicket']);
+        Route::post('/{id}/assign', [App\Http\Controllers\Admin\AdminSupportController::class, 'assignTicket']);
+        Route::put('/{id}/status', [App\Http\Controllers\Admin\AdminSupportController::class, 'updateTicketStatus']);
+        Route::post('/{id}/reply', [App\Http\Controllers\Admin\AdminSupportController::class, 'replyToTicket']);
+    });
+
+    // Canned Responses
+    Route::prefix('canned-responses')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminSupportController::class, 'cannedResponses']);
+        Route::post('/', [App\Http\Controllers\Admin\AdminSupportController::class, 'createCannedResponse']);
+        Route::put('/{id}', [App\Http\Controllers\Admin\AdminSupportController::class, 'updateCannedResponse']);
+        Route::delete('/{id}', [App\Http\Controllers\Admin\AdminSupportController::class, 'deleteCannedResponse']);
+    });
+
+    // Email Templates
+    Route::prefix('email-templates')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminSupportController::class, 'emailTemplates']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminSupportController::class, 'showEmailTemplate']);
+        Route::put('/{id}', [App\Http\Controllers\Admin\AdminSupportController::class, 'updateEmailTemplate']);
+    });
+
+    // Customer Communications
+    Route::get('/customers/{id}/communications', [App\Http\Controllers\Admin\AdminSupportController::class, 'customerCommunications']);
+    Route::post('/notifications/send', [App\Http\Controllers\Admin\AdminSupportController::class, 'sendNotification']);
 });
