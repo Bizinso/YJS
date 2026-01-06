@@ -29,13 +29,12 @@ class OrderShipped extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject("Order Shipped - #{$this->order->custom_order_code}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Great news! Your order has been shipped.")
-            ->line("Order Number: {$this->order->custom_order_code}")
-            ->line("Courier: {$this->order->courier_name}")
-            ->line("Tracking Number: {$this->order->awb_number}")
-            ->action('Track Order', $trackingUrl)
-            ->line('You can track your shipment using the button above.');
+            ->view('emails.orders.shipped', [
+                'order' => $this->order->load(['items.product', 'customer', 'shippingAddress']),
+                'trackingNumber' => $this->order->awb_number,
+                'trackingUrl' => $trackingUrl,
+                'carrier' => $this->order->courier_name ?? 'Shiprocket',
+            ]);
     }
 
     public function toArray(object $notifiable): array

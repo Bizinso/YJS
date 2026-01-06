@@ -20,11 +20,9 @@ class WelcomeNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('Welcome to YJS Jewellers!')
-            ->greeting("Hello {$notifiable->name}!")
-            ->line('Welcome to YJS Jewellers. We are delighted to have you with us.')
-            ->line('Discover our exquisite collection of fine jewellery crafted with precision and love.')
-            ->action('Start Shopping', url('/'))
-            ->line('Thank you for choosing YJS Jewellers!');
+            ->view('emails.auth.welcome', [
+                'user' => $notifiable,
+            ]);
     }
 
     public function toArray(object $notifiable): array

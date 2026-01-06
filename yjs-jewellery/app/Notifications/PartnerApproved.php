@@ -25,11 +25,9 @@ class PartnerApproved extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('Partner Account Approved - YJS Jewellers')
-            ->greeting("Hello {$this->partner->company_name}!")
-            ->line('Great news! Your partner account has been approved.')
-            ->line('You can now access our B2B portal and place bulk orders.')
-            ->action('Access Partner Portal', url('/partner/dashboard'))
-            ->line('Thank you for partnering with YJS Jewellers!');
+            ->view('emails.partner.approved', [
+                'partner' => $this->partner,
+            ]);
     }
 
     public function toArray(object $notifiable): array

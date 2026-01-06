@@ -23,16 +23,11 @@ class OrderConfirmation extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $orderTotal = number_format($this->order->order_total, 2);
-
         return (new MailMessage)
             ->subject("Order Confirmed - #{$this->order->custom_order_code}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Thank you for your order. Your order has been confirmed.")
-            ->line("Order Number: {$this->order->custom_order_code}")
-            ->line("Order Total: ₹{$orderTotal}")
-            ->action('View Order', url("/orders/{$this->order->id}"))
-            ->line('We will notify you when your order ships.');
+            ->view('emails.orders.confirmation', [
+                'order' => $this->order->load(['items.product', 'customer', 'shippingAddress']),
+            ]);
     }
 
     public function toArray(object $notifiable): array

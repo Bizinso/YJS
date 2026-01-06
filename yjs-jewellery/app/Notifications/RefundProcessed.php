@@ -25,17 +25,13 @@ class RefundProcessed extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $amount = number_format($this->amount, 2);
-
         return (new MailMessage)
             ->subject("Refund Processed - #{$this->order->custom_order_code}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Your refund has been processed.")
-            ->line("Order Number: {$this->order->custom_order_code}")
-            ->line("Refund Amount: ₹{$amount}")
-            ->line("Reason: {$this->reason}")
-            ->line('The amount will be credited to your original payment method within 5-7 business days.')
-            ->action('View Order', url("/orders/{$this->order->id}"));
+            ->view('emails.orders.refund', [
+                'order' => $this->order->load(['customer']),
+                'amount' => $this->amount,
+                'reason' => $this->reason,
+            ]);
     }
 
     public function toArray(object $notifiable): array

@@ -23,11 +23,10 @@ class PasswordReset extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Password Reset OTP')
-            ->greeting("Hello {$notifiable->name}!")
-            ->line('You have requested to reset your password.')
-            ->line("Your OTP is: **{$this->otp}**")
-            ->line('This OTP is valid for 10 minutes.')
-            ->line('If you did not request this, please ignore this email.');
+            ->subject('Password Reset OTP - YJS Jewellers')
+            ->view('emails.auth.password-reset', [
+                'user' => $notifiable,
+                'otp' => $this->otp,
+            ]);
     }
 }

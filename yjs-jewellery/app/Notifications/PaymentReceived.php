@@ -24,16 +24,12 @@ class PaymentReceived extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $amount = number_format($this->amount, 2);
-
         return (new MailMessage)
             ->subject("Payment Received - #{$this->order->custom_order_code}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("We have received your payment.")
-            ->line("Order Number: {$this->order->custom_order_code}")
-            ->line("Amount Paid: ₹{$amount}")
-            ->action('View Order', url("/orders/{$this->order->id}"))
-            ->line('Thank you for your purchase!');
+            ->view('emails.orders.payment', [
+                'order' => $this->order->load(['customer']),
+                'amount' => $this->amount,
+            ]);
     }
 
     public function toArray(object $notifiable): array
