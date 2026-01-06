@@ -601,4 +601,83 @@ class NotificationService
             return false;
         }
     }
+
+    /**
+     * Send password reset notification.
+     *
+     * @param User $user
+     * @param string $newPassword
+     * @param User|null $resetBy
+     * @return array
+     */
+    public function sendPasswordResetNotification(User $user, string $newPassword, ?User $resetBy = null): array
+    {
+        $results = [
+            'user_id' => $user->id,
+            'type' => 'password_reset',
+            'channels' => [],
+        ];
+
+        // Send email notification
+        if ($this->shouldSendEmail($user)) {
+            $results['channels']['email'] = $this->sendPasswordResetEmail($user, $newPassword, $resetBy);
+        }
+
+        // Store database notification
+        $results['channels']['database'] = $this->storeNotification(
+            $user,
+            'password_reset',
+            'Password Reset',
+            'Your password has been reset by an administrator. Please change it immediately after logging in.',
+            [
+                'reset_by' => $resetBy?->name ?? 'Administrator',
+                'reset_at' => now()->toIso8601String(),
+            ]
+        );
+
+        $results['success'] = true;
+        return $results;
+    }
+
+    /**
+     * Send password reset email.
+     *
+     * @param User $user
+     * @param string $newPassword
+     * @param User|null $resetBy
+     * @return bool
+     */
+    protected function sendPasswordResetEmail(User $user, string $newPassword, ?User $resetBy = null): bool
+    {
+        try {
+            $appName = config('app.name', 'YJS Jewellery');
+            $resetByName = $resetBy?->name ?? 'Administrator';
+
+            Mail::raw(
+                "Hello {$user->name},\n\n" .
+                "Your password has been reset by {$resetByName}.\n\n" .
+                "Your new password is: {$newPassword}\n\n" .
+                "Please login and change your password immediately for security.\n\n" .
+                "If you did not request this change, please contact support immediately.\n\n" .
+                "Best regards,\n{$appName} Team",
+                function ($message) use ($user, $appName) {
+                    $message->to($user->email)
+                        ->subject("{$appName} - Password Reset Notification");
+                }
+            );
+
+            Log::info('Password reset email sent', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to send password reset email', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
 }

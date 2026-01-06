@@ -13,6 +13,7 @@ use App\Models\LoginAttempt;
 use App\Models\UserSession;
 use App\Models\UserNote;
 use App\Models\UserVerification;
+use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -280,11 +281,19 @@ class AdminUserController extends Controller
         // Revoke all sessions on password reset
         UserSession::forUser($id)->active()->update(['is_active' => false]);
 
-        // TODO: Send password reset notification if notify_user is true
+        // Send password reset notification if notify_user is true
+        if ($request->boolean('notify_user')) {
+            $notificationService = app(NotificationService::class);
+            $notificationService->sendPasswordResetNotification(
+                $user,
+                $request->password,
+                $request->user()
+            );
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Password reset successfully',
+            'message' => 'Password reset successfully' . ($request->boolean('notify_user') ? ' and notification sent' : ''),
         ]);
     }
 

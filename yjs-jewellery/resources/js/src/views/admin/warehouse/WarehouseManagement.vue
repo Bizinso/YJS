@@ -203,6 +203,185 @@
                 </b-tabs>
             </div>
         </div>
+
+        <!-- Warehouse Modal -->
+        <b-modal v-model="showWarehouseModal" :title="editingWarehouse ? 'Edit Warehouse' : 'Add Warehouse'" size="lg" @ok="saveWarehouse" ok-title="Save">
+            <b-form @submit.prevent="saveWarehouse">
+                <div class="row">
+                    <div class="col-md-6">
+                        <b-form-group label="Name *" label-for="warehouse-name">
+                            <b-form-input id="warehouse-name" v-model="warehouseForm.name" required placeholder="Enter warehouse name" />
+                        </b-form-group>
+                    </div>
+                    <div class="col-md-6">
+                        <b-form-group label="Code *" label-for="warehouse-code">
+                            <b-form-input id="warehouse-code" v-model="warehouseForm.code" required placeholder="e.g., WH-MUM-001" />
+                        </b-form-group>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <b-form-group label="Type *" label-for="warehouse-type">
+                            <v-select id="warehouse-type" v-model="warehouseForm.type" :options="warehouseTypes" :reduce="t => t.value" label="label" placeholder="Select type" />
+                        </b-form-group>
+                    </div>
+                    <div class="col-md-6">
+                        <b-form-group label="Priority" label-for="warehouse-priority">
+                            <b-form-input id="warehouse-priority" v-model="warehouseForm.priority" type="number" min="1" placeholder="1" />
+                        </b-form-group>
+                    </div>
+                </div>
+                <b-form-group label="Description" label-for="warehouse-desc">
+                    <b-form-textarea id="warehouse-desc" v-model="warehouseForm.description" rows="2" placeholder="Optional description" />
+                </b-form-group>
+                <hr>
+                <h6>Address</h6>
+                <div class="row">
+                    <div class="col-md-12">
+                        <b-form-group label="Address Line 1 *" label-for="address1">
+                            <b-form-input id="address1" v-model="warehouseForm.address_line1" required placeholder="Street address" />
+                        </b-form-group>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <b-form-group label="Address Line 2" label-for="address2">
+                            <b-form-input id="address2" v-model="warehouseForm.address_line2" placeholder="Apartment, suite, etc." />
+                        </b-form-group>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <b-form-group label="City *" label-for="city">
+                            <b-form-input id="city" v-model="warehouseForm.city" required placeholder="City" />
+                        </b-form-group>
+                    </div>
+                    <div class="col-md-6">
+                        <b-form-group label="State *" label-for="state">
+                            <b-form-input id="state" v-model="warehouseForm.state" required placeholder="State" />
+                        </b-form-group>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <b-form-group label="Pincode *" label-for="pincode">
+                            <b-form-input id="pincode" v-model="warehouseForm.pincode" required placeholder="PIN Code" />
+                        </b-form-group>
+                    </div>
+                    <div class="col-md-6">
+                        <b-form-group label="Country" label-for="country">
+                            <b-form-input id="country" v-model="warehouseForm.country" placeholder="IN" />
+                        </b-form-group>
+                    </div>
+                </div>
+                <hr>
+                <h6>Contact</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <b-form-group label="Phone" label-for="phone">
+                            <b-form-input id="phone" v-model="warehouseForm.phone" placeholder="+91-XX-XXXXXXXX" />
+                        </b-form-group>
+                    </div>
+                    <div class="col-md-6">
+                        <b-form-group label="Email" label-for="email">
+                            <b-form-input id="email" v-model="warehouseForm.email" type="email" placeholder="warehouse@example.com" />
+                        </b-form-group>
+                    </div>
+                </div>
+                <hr>
+                <h6>Settings</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <b-form-checkbox v-model="warehouseForm.is_active">Active</b-form-checkbox>
+                    </div>
+                    <div class="col-md-4">
+                        <b-form-checkbox v-model="warehouseForm.is_default">Default Warehouse</b-form-checkbox>
+                    </div>
+                    <div class="col-md-4">
+                        <b-form-checkbox v-model="warehouseForm.accepts_returns">Accepts Returns</b-form-checkbox>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4">
+                        <b-form-checkbox v-model="warehouseForm.allows_pickup">Allows Pickup</b-form-checkbox>
+                    </div>
+                </div>
+            </b-form>
+        </b-modal>
+
+        <!-- Stock Transfer Modal -->
+        <b-modal v-model="showTransferModal" title="New Stock Transfer" size="lg" @ok="saveTransfer" ok-title="Create Transfer">
+            <b-form @submit.prevent="saveTransfer">
+                <div class="row">
+                    <div class="col-md-6">
+                        <b-form-group label="From Warehouse *" label-for="from-warehouse">
+                            <v-select id="from-warehouse" v-model="transferForm.from_warehouse_id" :options="warehouses" :reduce="w => w.id" label="name" placeholder="Select source warehouse" />
+                        </b-form-group>
+                    </div>
+                    <div class="col-md-6">
+                        <b-form-group label="To Warehouse *" label-for="to-warehouse">
+                            <v-select id="to-warehouse" v-model="transferForm.to_warehouse_id" :options="warehouses" :reduce="w => w.id" label="name" placeholder="Select destination warehouse" />
+                        </b-form-group>
+                    </div>
+                </div>
+                <b-form-group label="Notes" label-for="transfer-notes">
+                    <b-form-textarea id="transfer-notes" v-model="transferForm.notes" rows="2" placeholder="Optional notes" />
+                </b-form-group>
+                <hr>
+                <h6>Items to Transfer</h6>
+                <div v-for="(item, index) in transferForm.items" :key="index" class="row align-items-end mb-2">
+                    <div class="col-md-6">
+                        <b-form-group label="Product" :label-for="'product-' + index">
+                            <b-form-input :id="'product-' + index" v-model="item.product_id" type="number" placeholder="Product ID" />
+                        </b-form-group>
+                    </div>
+                    <div class="col-md-4">
+                        <b-form-group label="Quantity" :label-for="'qty-' + index">
+                            <b-form-input :id="'qty-' + index" v-model="item.quantity" type="number" min="1" placeholder="Qty" />
+                        </b-form-group>
+                    </div>
+                    <div class="col-md-2">
+                        <b-button variant="outline-danger" size="sm" @click="removeTransferItem(index)" v-if="transferForm.items.length > 1">Remove</b-button>
+                    </div>
+                </div>
+                <b-button variant="outline-primary" size="sm" @click="addTransferItem">+ Add Item</b-button>
+            </b-form>
+        </b-modal>
+
+        <!-- Inventory Count Modal -->
+        <b-modal v-model="showCountModal" title="New Inventory Count" size="md" @ok="saveCount" ok-title="Create Count">
+            <b-form @submit.prevent="saveCount">
+                <b-form-group label="Warehouse *" label-for="count-warehouse">
+                    <v-select id="count-warehouse" v-model="countForm.warehouse_id" :options="warehouses" :reduce="w => w.id" label="name" placeholder="Select warehouse" />
+                </b-form-group>
+                <b-form-group label="Count Type *" label-for="count-type">
+                    <v-select id="count-type" v-model="countForm.type" :options="countTypeOptions" :reduce="t => t.value" label="label" placeholder="Select type" />
+                </b-form-group>
+                <b-form-group label="Notes" label-for="count-notes">
+                    <b-form-textarea id="count-notes" v-model="countForm.notes" rows="2" placeholder="Optional notes" />
+                </b-form-group>
+            </b-form>
+        </b-modal>
+
+        <!-- Stock View Modal -->
+        <b-modal v-model="showStockModal" :title="'Stock - ' + (selectedWarehouse?.name || '')" size="xl" hide-footer>
+            <div class="mb-3">
+                <b-form-input v-model="stockSearch" @input="fetchWarehouseStock" placeholder="Search products..." />
+            </div>
+            <b-table responsive="sm" :items="warehouseStock" :fields="stockFields" v-if="warehouseStock.length > 0">
+                <template #cell(product)="row">
+                    {{ row.item.product?.name || 'N/A' }}
+                </template>
+                <template #cell(status)="row">
+                    <b-badge :variant="getStockStatusVariant(row.item.quantity, row.item.low_stock_threshold)">
+                        {{ getStockStatus(row.item.quantity, row.item.low_stock_threshold) }}
+                    </b-badge>
+                </template>
+            </b-table>
+            <div v-else class="text-center p-3">
+                <p>No stock records found.</p>
+            </div>
+        </b-modal>
     </div>
 </template>
 
@@ -272,6 +451,72 @@ const alertFields = [
 ]
 
 const hasActiveAlerts = computed(() => alerts.value.some(a => a.status === 'active'))
+
+// Modal State
+const showWarehouseModal = ref(false)
+const showTransferModal = ref(false)
+const showCountModal = ref(false)
+const showStockModal = ref(false)
+const editingWarehouse = ref(null)
+const selectedWarehouse = ref(null)
+const warehouseStock = ref([])
+const stockSearch = ref('')
+
+// Form Data
+const warehouseForm = ref({
+    name: '',
+    code: '',
+    type: 'warehouse',
+    description: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    state: '',
+    pincode: '',
+    country: 'IN',
+    phone: '',
+    email: '',
+    is_active: true,
+    is_default: false,
+    accepts_returns: true,
+    allows_pickup: false,
+    priority: 1
+})
+
+const transferForm = ref({
+    from_warehouse_id: null,
+    to_warehouse_id: null,
+    notes: '',
+    items: [{ product_id: '', quantity: 1 }]
+})
+
+const countForm = ref({
+    warehouse_id: null,
+    type: 'full',
+    notes: ''
+})
+
+// Options
+const warehouseTypes = [
+    { value: 'warehouse', label: 'Warehouse' },
+    { value: 'store', label: 'Store' },
+    { value: 'fulfillment_center', label: 'Fulfillment Center' }
+]
+
+const countTypeOptions = [
+    { value: 'full', label: 'Full Count' },
+    { value: 'cycle', label: 'Cycle Count' },
+    { value: 'spot', label: 'Spot Check' }
+]
+
+const stockFields = [
+    { key: 'product', label: 'Product' },
+    { key: 'sku', label: 'SKU' },
+    { key: 'quantity', label: 'Qty' },
+    { key: 'reserved_quantity', label: 'Reserved' },
+    { key: 'available_quantity', label: 'Available' },
+    { key: 'status', label: 'Status' }
+]
 
 // Fetch functions
 const fetchDashboard = async () => {
@@ -355,14 +600,88 @@ const getAlertTypeVariant = (type) => {
 }
 
 // Actions
-const openWarehouseModal = (warehouse = null) => {
-    // TODO: Implement warehouse modal
-    toast.info('Warehouse modal - implement as needed')
+const resetWarehouseForm = () => {
+    warehouseForm.value = {
+        name: '',
+        code: '',
+        type: 'warehouse',
+        description: '',
+        address_line1: '',
+        address_line2: '',
+        city: '',
+        state: '',
+        pincode: '',
+        country: 'IN',
+        phone: '',
+        email: '',
+        is_active: true,
+        is_default: false,
+        accepts_returns: true,
+        allows_pickup: false,
+        priority: 1
+    }
 }
 
-const viewWarehouseStock = (warehouse) => {
-    // TODO: Navigate to warehouse stock view
-    toast.info('View stock for ' + warehouse.name)
+const openWarehouseModal = (warehouse = null) => {
+    if (warehouse) {
+        editingWarehouse.value = warehouse
+        warehouseForm.value = { ...warehouse }
+    } else {
+        editingWarehouse.value = null
+        resetWarehouseForm()
+    }
+    showWarehouseModal.value = true
+}
+
+const saveWarehouse = async () => {
+    try {
+        if (editingWarehouse.value) {
+            await axiosEmployee.put(`/admin/warehouse/${editingWarehouse.value.id}`, warehouseForm.value)
+            toast.success('Warehouse updated successfully')
+        } else {
+            await axiosEmployee.post('/admin/warehouse', warehouseForm.value)
+            toast.success('Warehouse created successfully')
+        }
+        showWarehouseModal.value = false
+        fetchWarehouses()
+        fetchDashboard()
+    } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to save warehouse')
+    }
+}
+
+const viewWarehouseStock = async (warehouse) => {
+    selectedWarehouse.value = warehouse
+    stockSearch.value = ''
+    showStockModal.value = true
+    await fetchWarehouseStock()
+}
+
+const fetchWarehouseStock = async () => {
+    if (!selectedWarehouse.value) return
+    try {
+        const response = await axiosEmployee.get(`/admin/warehouse/${selectedWarehouse.value.id}/stock`, {
+            params: { search: stockSearch.value }
+        })
+        if (response.data.success) {
+            warehouseStock.value = response.data.data.data || response.data.data || []
+        }
+    } catch (error) {
+        console.error('Error fetching stock:', error)
+        warehouseStock.value = []
+    }
+}
+
+const getStockStatus = (qty, threshold) => {
+    if (qty === 0) return 'Out of Stock'
+    if (qty <= threshold) return 'Low Stock'
+    return 'In Stock'
+}
+
+const getStockStatusVariant = (qty, threshold) => {
+    if (qty === 0) return 'danger'
+    if (qty <= threshold) return 'warning'
+    return 'success'
 }
 
 const deleteWarehouse = async (id) => {
@@ -378,7 +697,33 @@ const deleteWarehouse = async (id) => {
 }
 
 const openTransferModal = () => {
-    toast.info('Transfer modal - implement as needed')
+    transferForm.value = {
+        from_warehouse_id: null,
+        to_warehouse_id: null,
+        notes: '',
+        items: [{ product_id: '', quantity: 1 }]
+    }
+    showTransferModal.value = true
+}
+
+const saveTransfer = async () => {
+    try {
+        await axiosEmployee.post('/admin/transfers', transferForm.value)
+        toast.success('Transfer created successfully')
+        showTransferModal.value = false
+        fetchTransfers()
+        fetchDashboard()
+    } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to create transfer')
+    }
+}
+
+const addTransferItem = () => {
+    transferForm.value.items.push({ product_id: '', quantity: 1 })
+}
+
+const removeTransferItem = (index) => {
+    transferForm.value.items.splice(index, 1)
 }
 
 const viewTransfer = (transfer) => {
@@ -429,7 +774,24 @@ const cancelTransfer = async (id) => {
 }
 
 const openCountModal = () => {
-    toast.info('Count modal - implement as needed')
+    countForm.value = {
+        warehouse_id: null,
+        type: 'full',
+        notes: ''
+    }
+    showCountModal.value = true
+}
+
+const saveCount = async () => {
+    try {
+        await axiosEmployee.post('/admin/inventory-counts', countForm.value)
+        toast.success('Inventory count created successfully')
+        showCountModal.value = false
+        fetchCounts()
+        fetchDashboard()
+    } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to create count')
+    }
 }
 
 const viewCount = (count) => {

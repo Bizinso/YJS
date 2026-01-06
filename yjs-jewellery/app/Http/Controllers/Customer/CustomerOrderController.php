@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderCancellation;
+use App\Models\RefundRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -322,7 +323,7 @@ class CustomerOrderController extends Controller
             ]);
 
             // Create cancellation record
-            OrderCancellation::create([
+            $cancellation = OrderCancellation::create([
                 'order_id' => $order->id,
                 'cancelled_by' => 'customer',
                 'cancelled_by_user_id' => $user->id,
@@ -334,10 +335,24 @@ class CustomerOrderController extends Controller
                 'cancelled_at' => now(),
             ]);
 
-            // TODO: Initiate refund if payment was made
-            // if ($order->payment_status === 'paid') {
-            //     $this->orderService->initiateRefund($order);
-            // }
+            // Create refund request if payment was made
+            if ($order->payment_status === 'paid') {
+                RefundRequest::create([
+                    'order_id' => $order->id,
+                    'user_id' => $user->id,
+                    'refund_type' => RefundRequest::TYPE_FULL,
+                    'original_amount' => $order->order_total,
+                    'refund_amount' => $order->order_total,
+                    'deductions' => 0,
+                    'status' => RefundRequest::STATUS_PENDING,
+                    'source' => RefundRequest::SOURCE_CANCELLATION,
+                    'source_id' => $cancellation->id,
+                    'source_type' => OrderCancellation::class,
+                    'refund_method' => RefundRequest::METHOD_ORIGINAL_PAYMENT,
+                    'reason_code' => 'customer_cancellation',
+                    'reason_description' => $request->reason,
+                ]);
+            }
 
             DB::commit();
 
