@@ -5,6 +5,7 @@ namespace App\Services\Payment;
 use App\Models\Order;
 use App\Models\OrderPayment;
 use App\Models\OrderRefund;
+use App\Models\Product;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -408,15 +409,28 @@ class RazorpayService
 
         $payment = OrderPayment::where('razorpay_order_id', $orderId)->first();
         if ($payment) {
-            $payment->update([
-                'status' => 'failed',
-                'error_code' => $paymentData['error_code'] ?? null,
-                'error_description' => $paymentData['error_description'] ?? null,
-            ]);
+            DB::transaction(function () use ($payment, $paymentData) {
+                $payment->update([
+                    'status' => 'failed',
+                    'error_code' => $paymentData['error_code'] ?? null,
+                    'error_description' => $paymentData['error_description'] ?? null,
+                ]);
 
-            $payment->order->update([
-                'payment_status' => 'failed',
-            ]);
+                $payment->order->update([
+                    'payment_status' => 'failed',
+                ]);
+
+                // Restore stock that was reserved during order creation
+                foreach ($payment->order->items as $item) {
+                    Product::where('id', $item->product_id)
+                        ->increment('available_stock', $item->quantity);
+                }
+
+                Log::info('Stock restored for failed payment', [
+                    'order_id' => $payment->order_id,
+                    'razorpay_order_id' => $orderId,
+                ]);
+            });
         }
 
         return ['success' => true];
