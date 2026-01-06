@@ -729,4 +729,40 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
         Route::get('/{group}', [App\Http\Controllers\Admin\AdminSettingsController::class, 'getGroup']);
         Route::put('/{group}', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateGroup']);
     });
+
+    // User Management
+    Route::prefix('users')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminUserController::class, 'dashboard']);
+        Route::get('/', [App\Http\Controllers\Admin\AdminUserController::class, 'index']);
+        Route::get('/export', [App\Http\Controllers\Admin\AdminUserController::class, 'export']);
+        Route::post('/bulk-status', [App\Http\Controllers\Admin\AdminUserController::class, 'bulkUpdateStatus']);
+        Route::get('/security', [App\Http\Controllers\Admin\AdminUserController::class, 'securityOverview']);
+        Route::get('/verifications', [App\Http\Controllers\Admin\AdminUserController::class, 'verifications']);
+        Route::post('/verifications/{id}/approve', [App\Http\Controllers\Admin\AdminUserController::class, 'approveVerification']);
+        Route::post('/verifications/{id}/reject', [App\Http\Controllers\Admin\AdminUserController::class, 'rejectVerification']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminUserController::class, 'show']);
+        Route::put('/{id}/status', [App\Http\Controllers\Admin\AdminUserController::class, 'updateStatus']);
+        Route::post('/{id}/lock', [App\Http\Controllers\Admin\AdminUserController::class, 'lock']);
+        Route::post('/{id}/unlock', [App\Http\Controllers\Admin\AdminUserController::class, 'unlock']);
+        Route::post('/{id}/reset-password', [App\Http\Controllers\Admin\AdminUserController::class, 'resetPassword']);
+        Route::post('/{id}/notes', [App\Http\Controllers\Admin\AdminUserController::class, 'addNote']);
+        Route::delete('/{userId}/notes/{noteId}', [App\Http\Controllers\Admin\AdminUserController::class, 'deleteNote']);
+        Route::get('/{id}/sessions', [App\Http\Controllers\Admin\AdminUserController::class, 'sessions']);
+        Route::delete('/{userId}/sessions/{sessionId}', [App\Http\Controllers\Admin\AdminUserController::class, 'revokeSession']);
+        Route::delete('/{id}/sessions', [App\Http\Controllers\Admin\AdminUserController::class, 'revokeAllSessions']);
+        Route::get('/{id}/activity', [App\Http\Controllers\Admin\AdminUserController::class, 'activityLog']);
+        Route::get('/{id}/login-attempts', [App\Http\Controllers\Admin\AdminUserController::class, 'loginAttempts']);
+        Route::put('/{id}/permissions', [App\Http\Controllers\Admin\AdminUserController::class, 'assignPermissions']);
+    });
+
+    // Role Management
+    Route::prefix('roles')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminUserController::class, 'roles']);
+        Route::post('/', [App\Http\Controllers\Admin\AdminUserController::class, 'createRole']);
+        Route::put('/{id}', [App\Http\Controllers\Admin\AdminUserController::class, 'updateRole']);
+        Route::delete('/{id}', [App\Http\Controllers\Admin\AdminUserController::class, 'deleteRole']);
+    });
+
+    // Permission Management
+    Route::get('/permissions', [App\Http\Controllers\Admin\AdminUserController::class, 'permissions']);
 });
