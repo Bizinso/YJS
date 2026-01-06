@@ -45,9 +45,10 @@ use App\Http\Controllers\Partner\PartnerDashboardController;
 |
 */
 Route::prefix('employee')->group(function () {
-    Route::post('/login', [AuthController::class, 'employeelogin']);
+    // Rate limit login attempts to 5 per minute
+    Route::post('/login', [AuthController::class, 'employeelogin'])->middleware('throttle:5,1');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::post('/logout', [AuthController::class, 'employeelogout']);
         Route::get('/menus', [CommonController::class, 'adminmenus']);
         Route::get('/profile', [AuthController::class, 'adminprofile']);
@@ -144,8 +145,9 @@ Route::prefix('employee')->group(function () {
 });
 
 Route::prefix('customer')->group(function () {
-    Route::post('/send-otp', [AuthController::class, 'sendOTP']);
-    Route::post('/verify-otp', [AuthController::class, 'verifyOTP']);
+    // Rate limited auth routes (5 attempts per minute)
+    Route::post('/send-otp', [AuthController::class, 'sendOTP'])->middleware('throttle:5,1');
+    Route::post('/verify-otp', [AuthController::class, 'verifyOTP'])->middleware('throttle:10,1');
     Route::get('/products', [ProductController::class, 'productListing']);
     Route::get('/filter/getCategoryOptions', [CategoryController::class, 'getCategoryOptions']);
     Route::get('/filter/getPurityOptions', [MetalTypeController::class, 'getPurityOptions']);
@@ -159,11 +161,11 @@ Route::prefix('customer')->group(function () {
     // Public review routes
     Route::get('/products/{productId}/reviews', [ReviewController::class, 'productReviews']);
 
-    // Public password routes
-    Route::post('/forgot-password', [CustomerPasswordController::class, 'forgotPassword']);
-    Route::post('/verify-reset-otp', [CustomerPasswordController::class, 'verifyResetOtp']);
-    Route::post('/reset-password', [CustomerPasswordController::class, 'resetPassword']);
-    Route::post('/login-password', [CustomerPasswordController::class, 'loginWithPassword']);
+    // Public password routes - rate limited (5 attempts per minute)
+    Route::post('/forgot-password', [CustomerPasswordController::class, 'forgotPassword'])->middleware('throttle:5,1');
+    Route::post('/verify-reset-otp', [CustomerPasswordController::class, 'verifyResetOtp'])->middleware('throttle:10,1');
+    Route::post('/reset-password', [CustomerPasswordController::class, 'resetPassword'])->middleware('throttle:5,1');
+    Route::post('/login-password', [CustomerPasswordController::class, 'loginWithPassword'])->middleware('throttle:5,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'customerlogout']);
@@ -329,18 +331,18 @@ Route::prefix('customer')->group(function () {
 });
 
 Route::prefix('partner')->group(function () {
-    // Public routes
-    Route::post('/send-otp', [AuthController::class, 'sendOTP']);
-    Route::post('/verify-otp', [AuthController::class, 'verifyOTP']);
-    Route::post('/register', [PartnerController::class, 'store']);
+    // Public routes - rate limited auth endpoints
+    Route::post('/send-otp', [AuthController::class, 'sendOTP'])->middleware('throttle:5,1');
+    Route::post('/verify-otp', [AuthController::class, 'verifyOTP'])->middleware('throttle:10,1');
+    Route::post('/register', [PartnerController::class, 'store'])->middleware('throttle:3,1');
     Route::get('/states/{country_id}', [CommonController::class, 'getStates']);
     Route::get('/cities/{state_id}', [CommonController::class, 'getCities']);
 
-    // Public password routes
-    Route::post('/forgot-password', [PartnerPasswordController::class, 'forgotPassword']);
-    Route::post('/verify-reset-otp', [PartnerPasswordController::class, 'verifyResetOtp']);
-    Route::post('/reset-password', [PartnerPasswordController::class, 'resetPassword']);
-    Route::post('/login-password', [PartnerPasswordController::class, 'loginWithPassword']);
+    // Public password routes - rate limited (5 attempts per minute)
+    Route::post('/forgot-password', [PartnerPasswordController::class, 'forgotPassword'])->middleware('throttle:5,1');
+    Route::post('/verify-reset-otp', [PartnerPasswordController::class, 'verifyResetOtp'])->middleware('throttle:10,1');
+    Route::post('/reset-password', [PartnerPasswordController::class, 'resetPassword'])->middleware('throttle:5,1');
+    Route::post('/login-password', [PartnerPasswordController::class, 'loginWithPassword'])->middleware('throttle:5,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'partnerlogout']);
@@ -437,7 +439,7 @@ Route::middleware(['auth:employee'])->prefix('employee/orders/{order}')->group(f
 | Admin Order & Inventory Management Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     // Dashboard & Reports
     Route::get('/dashboard', [App\Http\Controllers\Admin\AdminDashboardController::class, 'overview']);
     Route::get('/reports/sales', [App\Http\Controllers\Admin\AdminDashboardController::class, 'salesReport']);

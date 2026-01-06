@@ -66,15 +66,26 @@ class WebhookController extends Controller
     /**
      * Shiprocket webhook handler
      * POST /api/webhooks/shiprocket
-     * 
+     *
      * Events handled:
      *   - Status updates (shipped, delivered, RTO, etc.)
      */
     public function shiprocket(Request $request): JsonResponse
     {
+        $signature = $request->header('X-Shiprocket-Signature');
+        $rawBody = $request->getContent();
+
+        // Verify signature if webhook secret is configured
+        if (!$this->shiprocket->verifyWebhookSignature($rawBody, $signature ?? '')) {
+            Log::warning('Shiprocket webhook: Invalid signature', [
+                'ip' => $request->ip(),
+            ]);
+            return response()->json(['error' => 'Invalid signature'], 401);
+        }
+
         try {
             $payload = $request->all();
-            
+
             Log::info('Shiprocket webhook received', [
                 'awb' => $payload['awb'] ?? 'N/A',
                 'status' => $payload['current_status'] ?? 'N/A',

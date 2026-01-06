@@ -49,7 +49,8 @@ class OrderService
             return ['success' => false, 'error' => 'Cart is empty'];
         }
 
-        // Validate stock
+        // Stock validation happens inside transaction with locking
+        // Pre-check (without lock) for early exit
         foreach ($cartItems as $item) {
             $product = Product::find($item->product_id);
             if (!$product || $product->available_stock < $item->quantity) {
@@ -114,8 +115,20 @@ class OrderService
                 'notes' => $notes,
             ]);
 
-            // Create order products
+            // Create order products with pessimistic locking for stock
             foreach ($cartItems as $item) {
+                // Lock the product row to prevent race conditions
+                $product = Product::where('id', $item->product_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                // Re-validate stock under lock
+                if (!$product || $product->available_stock < $item->quantity) {
+                    throw new \RuntimeException(
+                        "Insufficient stock for {$product?->name ?? 'product'}. Available: {$product?->available_stock ?? 0}"
+                    );
+                }
+
                 OrderProduct::create([
                     'order_id' => $order->id,
                     'product_id' => $item->product_id,
@@ -126,9 +139,8 @@ class OrderService
                     'total' => $item->cart_total,
                 ]);
 
-                // Reserve stock
-                Product::where('id', $item->product_id)
-                    ->decrement('available_stock', $item->quantity);
+                // Reserve stock (already locked)
+                $product->decrement('available_stock', $item->quantity);
             }
 
             // Snapshot offer if applied
@@ -178,9 +190,10 @@ class OrderService
                 'order_status' => 'cancelled',
             ]);
 
-            // Restore inventory
+            // Restore inventory with pessimistic locking
             foreach ($order->orderProducts as $item) {
                 Product::where('id', $item->product_id)
+                    ->lockForUpdate()
                     ->increment('available_stock', $item->quantity);
             }
 

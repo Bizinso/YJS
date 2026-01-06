@@ -420,9 +420,10 @@ class RazorpayService
                     'payment_status' => 'failed',
                 ]);
 
-                // Restore stock that was reserved during order creation
+                // Restore stock that was reserved during order creation (with locking)
                 foreach ($payment->order->items as $item) {
                     Product::where('id', $item->product_id)
+                        ->lockForUpdate()
                         ->increment('available_stock', $item->quantity);
                 }
 

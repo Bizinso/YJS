@@ -421,6 +421,28 @@ class ShiprocketService
     }
 
     /**
+     * Verify Shiprocket webhook signature
+     *
+     * @param string $rawBody Raw request body
+     * @param string $signature X-Shiprocket-Signature header value
+     * @return bool
+     */
+    public function verifyWebhookSignature(string $rawBody, string $signature): bool
+    {
+        $webhookSecret = config('services.shiprocket.webhook_secret');
+
+        if (empty($webhookSecret)) {
+            // Log warning but allow processing if secret not configured (backward compatibility)
+            Log::warning('Shiprocket webhook secret not configured - skipping signature verification');
+            return true;
+        }
+
+        $expectedSignature = base64_encode(hash_hmac('sha256', $rawBody, $webhookSecret, true));
+
+        return hash_equals($expectedSignature, $signature);
+    }
+
+    /**
      * Process webhook from Shiprocket
      * Updates EXISTING Order fields
      */

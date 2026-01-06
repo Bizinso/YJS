@@ -124,7 +124,7 @@ class AuthController extends Controller
         }
 
         // Generate OTP
-        $otp =123456;// rand(100000, 999999);
+        $otp = rand(100000, 999999);
 
         DB::table('otps')->where('identifier', $identifier)->delete();
 
@@ -146,7 +146,6 @@ class AuthController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'OTP sent successfully',
-            'otp'     => $otp // remove in production
         ]);
     }
 

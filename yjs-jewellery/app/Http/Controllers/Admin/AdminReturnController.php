@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ReturnRequest;
 use App\Models\ReturnRequestItem;
 use App\Models\ReturnPolicySetting;
-use App\Services\RefundService;
+use App\Models\Product;
+use App\Services\Refund\RefundService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -512,7 +513,8 @@ class AdminReturnController extends Controller
                 ], 404);
             }
 
-            // Inspect individual items if provided
+            // Inspect individual items and restore stock for approved items
+            $stockRestored = [];
             if ($request->items) {
                 foreach ($request->items as $itemData) {
                     $item = $returnRequest->items->find($itemData['id']);
@@ -522,6 +524,17 @@ class AdminReturnController extends Controller
                             $itemData['notes'] ?? null,
                             $itemData['approved']
                         );
+
+                        // Restore stock for approved items with pessimistic locking
+                        if ($itemData['approved'] && $item->product_id && $item->quantity > 0) {
+                            Product::where('id', $item->product_id)
+                                ->lockForUpdate()
+                                ->increment('available_stock', $item->quantity);
+                            $stockRestored[] = [
+                                'product_id' => $item->product_id,
+                                'quantity' => $item->quantity,
+                            ];
+                        }
                     }
                 }
             }
@@ -535,6 +548,12 @@ class AdminReturnController extends Controller
             $returnRequest->save();
 
             DB::commit();
+
+            \Illuminate\Support\Facades\Log::info("Return inspection completed", [
+                'return_request_id' => $returnRequest->id,
+                'result' => $request->result,
+                'stock_restored' => $stockRestored,
+            ]);
 
             return response()->json([
                 'success' => true,

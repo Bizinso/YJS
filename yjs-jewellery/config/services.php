@@ -58,6 +58,7 @@ return [
         'return_state' => env('SHIPROCKET_RETURN_STATE'),
         'return_phone' => env('SHIPROCKET_RETURN_PHONE'),
         'auto_create_order' => env('SHIPROCKET_AUTO_CREATE', false),
+        'webhook_secret' => env('SHIPROCKET_WEBHOOK_SECRET'),
     ],
 
 ];
