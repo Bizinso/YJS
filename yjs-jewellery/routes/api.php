@@ -624,4 +624,36 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
         Route::put('/{id}/notes', [App\Http\Controllers\Admin\AdminCancellationController::class, 'updateNotes']);
         Route::post('/bulk-status', [App\Http\Controllers\Admin\AdminCancellationController::class, 'bulkUpdateStatus']);
     });
+
+    // Finance Management
+    Route::prefix('finance')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminFinanceController::class, 'dashboard']);
+        Route::get('/revenue', [App\Http\Controllers\Admin\AdminFinanceController::class, 'revenue']);
+        Route::get('/outstanding', [App\Http\Controllers\Admin\AdminFinanceController::class, 'outstanding']);
+        Route::get('/payments/export', [App\Http\Controllers\Admin\AdminFinanceController::class, 'exportPayments']);
+    });
+
+    // Refund Request Management
+    Route::prefix('refunds')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminFinanceController::class, 'refunds']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminFinanceController::class, 'showRefund']);
+        Route::post('/{id}/start-review', [App\Http\Controllers\Admin\AdminFinanceController::class, 'startRefundReview']);
+        Route::post('/{id}/approve', [App\Http\Controllers\Admin\AdminFinanceController::class, 'approveRefund']);
+        Route::post('/{id}/reject', [App\Http\Controllers\Admin\AdminFinanceController::class, 'rejectRefund']);
+        Route::post('/{id}/process', [App\Http\Controllers\Admin\AdminFinanceController::class, 'processRefund']);
+    });
+
+    // Credit Notes Management
+    Route::prefix('credit-notes')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminFinanceController::class, 'creditNotes']);
+        Route::post('/', [App\Http\Controllers\Admin\AdminFinanceController::class, 'createCreditNote']);
+        Route::get('/{id}', [App\Http\Controllers\Admin\AdminFinanceController::class, 'showCreditNote']);
+        Route::delete('/{id}', [App\Http\Controllers\Admin\AdminFinanceController::class, 'cancelCreditNote']);
+    });
+
+    // Payment Settlements & Reconciliation
+    Route::prefix('settlements')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminFinanceController::class, 'settlements']);
+        Route::post('/reconcile', [App\Http\Controllers\Admin\AdminFinanceController::class, 'reconcile']);
+    });
 });
