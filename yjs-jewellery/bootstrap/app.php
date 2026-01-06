@@ -17,11 +17,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'partner' => \App\Http\Middleware\EnsurePartner::class,
             'customer' => \App\Http\Middleware\EnsureCustomer::class,
+            'sanitize' => \App\Http\Middleware\SanitizeInput::class,
+            'log.api' => \App\Http\Middleware\LogApiRequests::class,
         ]);
 
         // Apply throttle to API routes
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \App\Http\Middleware\SanitizeInput::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

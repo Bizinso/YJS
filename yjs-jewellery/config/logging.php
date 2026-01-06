@@ -127,6 +127,22 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'api' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/api.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => env('LOG_API_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
+        'sms' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/sms.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => env('LOG_SMS_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

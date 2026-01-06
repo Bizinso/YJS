@@ -4,12 +4,13 @@ namespace App\Services\Invoice;
 
 use App\Models\Order;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Exception;
 
 /**
  * Invoice Service
  *
- * Generates invoice data and HTML for orders.
- * PDF generation requires barryvdh/laravel-dompdf package.
+ * Generates invoice data, HTML, and PDF for orders.
  */
 class InvoiceService
 {
@@ -350,5 +351,94 @@ class InvoiceService
             'E. & O.E.',
             'All disputes are subject to arbitration.',
         ];
+    }
+
+    /**
+     * Generate PDF invoice for an order.
+     *
+     * @param Order $order
+     * @return \Barryvdh\DomPDF\PDF|null
+     */
+    public function generatePdf(Order $order)
+    {
+        try {
+            $data = $this->generateInvoiceData($order);
+
+            if (!class_exists(Pdf::class)) {
+                throw new Exception('PDF package not installed. Run: composer require barryvdh/laravel-dompdf');
+            }
+
+            return Pdf::loadView('invoices.order', $data)
+                ->setPaper('a4', 'portrait')
+                ->setOptions([
+                    'dpi' => 150,
+                    'defaultFont' => 'sans-serif',
+                    'isHtml5ParserEnabled' => true,
+                    'isRemoteEnabled' => true,
+                ]);
+        } catch (Exception $e) {
+            report($e);
+            return null;
+        }
+    }
+
+    /**
+     * Generate and save PDF invoice to storage.
+     *
+     * @param Order $order
+     * @param string|null $path Custom storage path
+     * @return string|null Path to saved file
+     */
+    public function generateAndSavePdf(Order $order, ?string $path = null): ?string
+    {
+        $pdf = $this->generatePdf($order);
+
+        if (!$pdf) {
+            return null;
+        }
+
+        $invoiceNumber = $this->generateInvoiceNumber($order);
+        $fileName = "invoice_{$invoiceNumber}.pdf";
+        $storagePath = $path ?? "invoices/{$order->customer_id}/{$fileName}";
+
+        Storage::disk('local')->put($storagePath, $pdf->output());
+
+        return $storagePath;
+    }
+
+    /**
+     * Get PDF download response.
+     *
+     * @param Order $order
+     * @return \Illuminate\Http\Response|null
+     */
+    public function downloadPdf(Order $order)
+    {
+        $pdf = $this->generatePdf($order);
+
+        if (!$pdf) {
+            return null;
+        }
+
+        $invoiceNumber = $this->generateInvoiceNumber($order);
+        return $pdf->download("invoice_{$invoiceNumber}.pdf");
+    }
+
+    /**
+     * Stream PDF to browser.
+     *
+     * @param Order $order
+     * @return \Illuminate\Http\Response|null
+     */
+    public function streamPdf(Order $order)
+    {
+        $pdf = $this->generatePdf($order);
+
+        if (!$pdf) {
+            return null;
+        }
+
+        $invoiceNumber = $this->generateInvoiceNumber($order);
+        return $pdf->stream("invoice_{$invoiceNumber}.pdf");
     }
 }
