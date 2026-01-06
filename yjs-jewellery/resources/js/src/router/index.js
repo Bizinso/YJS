@@ -88,6 +88,17 @@ import ViewProduct from "../views/admin/products/ViewProduct.vue";
 import Cart from '../views/frontend/Cart.vue'
 import DeliveryAddress from '../views/frontend/DeliveryAddress.vue'
 import OrderSuccess from '../views/frontend/OrderSuccess.vue'
+
+// New Admin Views
+import WarehouseManagement from '../views/admin/warehouse/WarehouseManagement.vue'
+import TaxRules from '../views/admin/tax/TaxRules.vue'
+import ReportsDashboard from '../views/admin/reports/ReportsDashboard.vue'
+import OrderManagement from '../views/admin/orders/OrderManagement.vue'
+import ReturnsExchanges from '../views/admin/returns/ReturnsExchanges.vue'
+import FinanceDashboard from '../views/admin/finance/FinanceDashboard.vue'
+import SupportTickets from '../views/admin/support/SupportTickets.vue'
+import UserManagement from '../views/admin/users/UserManagement.vue'
+import AdvancedOffers from '../views/admin/offers/AdvancedOffers.vue'
 const routes = [
   // -------------------------
   // FRONTEND ROUTES
@@ -141,6 +152,37 @@ const routes = [
   { path: '/admin/exhibition', name: 'admin.exhibitions', component: Exhibition, meta: { requiresAuth: true, title: "Exhibition" } },
   { path: '/admin/brochures', name: 'admin.brochures', component: Brochures, meta: { requiresAuth: true, title: "Brochures" } },
   { path: '/admin/feedback', name: 'admin.feedback', component: Feedback, meta: { requiresAuth: true, title: "Feedback" } },
+
+  // -------------------------
+  // NEW ADMIN FEATURES
+  // -------------------------
+  // Warehouse & Inventory
+  { path: '/admin/warehouse', name: 'admin.warehouse', component: WarehouseManagement, meta: { requiresAuth: true, title: "Warehouse Management", parent: "Inventory" } },
+
+  // Tax Management
+  { path: '/admin/tax-rules', name: 'admin.tax-rules', component: TaxRules, meta: { requiresAuth: true, title: "Tax Rules Engine", parent: "Settings" } },
+
+  // Reports & Analytics
+  { path: '/admin/reports', name: 'admin.reports', component: ReportsDashboard, meta: { requiresAuth: true, title: "Reports & Analytics", parent: "Reports" } },
+
+  // Order Management (Advanced)
+  { path: '/admin/order-management', name: 'admin.order-management', component: OrderManagement, meta: { requiresAuth: true, title: "Order Management", parent: "Orders" } },
+  { path: '/admin/orders/:id', name: 'admin.order-detail', component: OrderManagement, meta: { requiresAuth: true, title: "Order Detail", parent: "Orders" } },
+
+  // Returns & Exchanges
+  { path: '/admin/returns', name: 'admin.returns', component: ReturnsExchanges, meta: { requiresAuth: true, title: "Returns & Exchanges", parent: "Orders" } },
+
+  // Finance
+  { path: '/admin/finance', name: 'admin.finance', component: FinanceDashboard, meta: { requiresAuth: true, title: "Finance Dashboard", parent: "Finance" } },
+
+  // Support Tickets
+  { path: '/admin/support', name: 'admin.support', component: SupportTickets, meta: { requiresAuth: true, title: "Support Tickets", parent: "Support" } },
+
+  // User Management
+  { path: '/admin/users', name: 'admin.users', component: UserManagement, meta: { requiresAuth: true, title: "User Management", parent: "Settings" } },
+
+  // Advanced Offers
+  { path: '/admin/advanced-offers', name: 'admin.advanced-offers', component: AdvancedOffers, meta: { requiresAuth: true, title: "Advanced Offers", parent: "Marketing" } },
 
   // -------------------------
   // SETTINGS

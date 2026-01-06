@@ -23,6 +23,10 @@ class DatabaseSeeder extends Seeder
             AttributeOptionSeeder::class,
             OfferTypeMasterSeeder::class,
             LoyaltyTierSeeder::class,
+            HsnCodeSeeder::class,
+            TaxZoneSeeder::class,
+            WarehouseSeeder::class,
+            SupportCategorySeeder::class,
         ]);
 
     }
