@@ -451,10 +451,25 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // Order Management
     Route::get('/orders', [App\Http\Controllers\Admin\AdminOrderController::class, 'index']);
     Route::get('/orders/statistics', [App\Http\Controllers\Admin\AdminOrderController::class, 'statistics']);
+    Route::get('/orders/export', [App\Http\Controllers\Admin\AdminOrderController::class, 'export']);
+    Route::get('/orders/sla-breaches', [App\Http\Controllers\Admin\AdminOrderController::class, 'slaBreaches']);
+    Route::get('/orders/hold-reasons', [App\Http\Controllers\Admin\AdminOrderController::class, 'holdReasons']);
+    Route::get('/orders/sla-config', [App\Http\Controllers\Admin\AdminOrderController::class, 'slaConfig']);
+    Route::put('/orders/sla-config', [App\Http\Controllers\Admin\AdminOrderController::class, 'updateSlaConfig']);
+    Route::post('/orders/bulk-status', [App\Http\Controllers\Admin\AdminOrderController::class, 'bulkStatus']);
     Route::get('/orders/{id}', [App\Http\Controllers\Admin\AdminOrderController::class, 'show']);
     Route::put('/orders/{id}/status', [App\Http\Controllers\Admin\AdminOrderController::class, 'updateStatus']);
     Route::post('/orders/{id}/refund', [App\Http\Controllers\Admin\AdminOrderController::class, 'processRefund']);
     Route::post('/orders/{id}/note', [App\Http\Controllers\Admin\AdminOrderController::class, 'addNote']);
+    Route::get('/orders/{id}/timeline', [App\Http\Controllers\Admin\AdminOrderController::class, 'timeline']);
+    Route::post('/orders/{id}/fulfill-partial', [App\Http\Controllers\Admin\AdminOrderController::class, 'fulfillPartial']);
+    Route::post('/orders/{id}/split', [App\Http\Controllers\Admin\AdminOrderController::class, 'splitShipment']);
+    Route::post('/orders/{id}/hold', [App\Http\Controllers\Admin\AdminOrderController::class, 'hold']);
+    Route::post('/orders/{id}/release', [App\Http\Controllers\Admin\AdminOrderController::class, 'release']);
+    Route::post('/orders/{id}/override', [App\Http\Controllers\Admin\AdminOrderController::class, 'override']);
+    Route::get('/orders/{id}/shipments', [App\Http\Controllers\Admin\AdminOrderController::class, 'shipments']);
+    Route::put('/orders/{id}/shipments/{shipmentId}/status', [App\Http\Controllers\Admin\AdminOrderController::class, 'updateShipmentStatus']);
+    Route::get('/orders/{id}/fulfillments', [App\Http\Controllers\Admin\AdminOrderController::class, 'fulfillments']);
 
     // Inventory Management
     Route::get('/inventory', [App\Http\Controllers\Admin\AdminInventoryController::class, 'index']);
