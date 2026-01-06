@@ -124,8 +124,10 @@ class OrderService
 
                 // Re-validate stock under lock
                 if (!$product || $product->available_stock < $item->quantity) {
+                    $productName = $product ? $product->name : 'product';
+                    $availableStock = $product ? $product->available_stock : 0;
                     throw new \RuntimeException(
-                        "Insufficient stock for {$product?->name ?? 'product'}. Available: {$product?->available_stock ?? 0}"
+                        "Insufficient stock for {$productName}. Available: {$availableStock}"
                     );
                 }
 
