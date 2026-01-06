@@ -685,4 +685,48 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // Customer Communications
     Route::get('/customers/{id}/communications', [App\Http\Controllers\Admin\AdminSupportController::class, 'customerCommunications']);
     Route::post('/notifications/send', [App\Http\Controllers\Admin\AdminSupportController::class, 'sendNotification']);
+
+    // Settings Management
+    Route::prefix('settings')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminSettingsController::class, 'index']);
+        Route::get('/history', [App\Http\Controllers\Admin\AdminSettingsController::class, 'history']);
+        Route::get('/export', [App\Http\Controllers\Admin\AdminSettingsController::class, 'export']);
+        Route::post('/import', [App\Http\Controllers\Admin\AdminSettingsController::class, 'import']);
+        Route::post('/clear-cache', [App\Http\Controllers\Admin\AdminSettingsController::class, 'clearCache']);
+        Route::post('/maintenance', [App\Http\Controllers\Admin\AdminSettingsController::class, 'toggleMaintenance']);
+        Route::post('/seed-defaults', [App\Http\Controllers\Admin\AdminSettingsController::class, 'seedDefaults']);
+
+        // Group-specific settings
+        Route::get('/store', [App\Http\Controllers\Admin\AdminSettingsController::class, 'storeSettings']);
+        Route::put('/store', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateStoreSettings']);
+
+        Route::get('/payment', [App\Http\Controllers\Admin\AdminSettingsController::class, 'paymentSettings']);
+        Route::put('/payment', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updatePaymentSettings']);
+
+        Route::get('/shipping', [App\Http\Controllers\Admin\AdminSettingsController::class, 'shippingSettings']);
+        Route::put('/shipping', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateShippingSettings']);
+
+        Route::get('/email', [App\Http\Controllers\Admin\AdminSettingsController::class, 'emailSettings']);
+        Route::put('/email', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateEmailSettings']);
+        Route::post('/email/test', [App\Http\Controllers\Admin\AdminSettingsController::class, 'testEmail']);
+
+        Route::get('/sms', [App\Http\Controllers\Admin\AdminSettingsController::class, 'smsSettings']);
+        Route::put('/sms', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateSmsSettings']);
+
+        Route::get('/currency', [App\Http\Controllers\Admin\AdminSettingsController::class, 'currencySettings']);
+        Route::put('/currency', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateCurrencySettings']);
+
+        Route::get('/tax', [App\Http\Controllers\Admin\AdminSettingsController::class, 'taxSettings']);
+        Route::put('/tax', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateTaxSettings']);
+
+        Route::get('/notification', [App\Http\Controllers\Admin\AdminSettingsController::class, 'notificationSettings']);
+        Route::put('/notification', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateNotificationSettings']);
+
+        Route::get('/security', [App\Http\Controllers\Admin\AdminSettingsController::class, 'securitySettings']);
+        Route::put('/security', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateSecuritySettings']);
+
+        // Generic group endpoint
+        Route::get('/{group}', [App\Http\Controllers\Admin\AdminSettingsController::class, 'getGroup']);
+        Route::put('/{group}', [App\Http\Controllers\Admin\AdminSettingsController::class, 'updateGroup']);
+    });
 });
