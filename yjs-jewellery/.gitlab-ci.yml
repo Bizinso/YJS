@@ -1,0 +1,286 @@
+# YJS Jewellery E-Commerce Platform
+# GitLab CI/CD Pipeline Configuration
+
+stages:
+  - build
+  - test
+  - quality
+  - deploy
+
+variables:
+  COMPOSER_MEMORY_LIMIT: -1
+  COMPOSER_NO_INTERACTION: 1
+  PHP_VERSION: "8.3"
+  NODE_VERSION: "20"
+
+# Cache dependencies between jobs
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - vendor/
+    - node_modules/
+    - .npm/
+
+# Default image for PHP jobs
+default:
+  image: php:8.3-cli
+  before_script:
+    - apt-get update -yqq
+    - apt-get install -yqq git unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libicu-dev
+    - docker-php-ext-configure gd --with-freetype --with-jpeg
+    - docker-php-ext-install pdo pdo_mysql mbstring zip gd intl bcmath
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# ==========================================
+# BUILD STAGE
+# ==========================================
+
+composer:
+  stage: build
+  script:
+    - composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+  artifacts:
+    paths:
+      - vendor/
+    expire_in: 1 week
+  only:
+    - branches
+    - merge_requests
+
+npm:
+  stage: build
+  image: node:20-alpine
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - public/build/
+    expire_in: 1 week
+  only:
+    - branches
+    - merge_requests
+
+# ==========================================
+# TEST STAGE
+# ==========================================
+
+phpunit:
+  stage: test
+  services:
+    - mysql:8.0
+  variables:
+    MYSQL_DATABASE: yjs_test
+    MYSQL_ROOT_PASSWORD: password
+    DB_HOST: mysql
+    DB_DATABASE: yjs_test
+    DB_USERNAME: root
+    DB_PASSWORD: password
+  script:
+    - cp .env.example .env
+    - php artisan key:generate
+    - php artisan config:clear
+    - php artisan migrate --force
+    - php artisan test --parallel --coverage-text
+  dependencies:
+    - composer
+  coverage: '/^\s*Lines:\s*\d+.\d+\%/'
+  artifacts:
+    reports:
+      junit: storage/logs/junit.xml
+    when: always
+  only:
+    - branches
+    - merge_requests
+
+jest:
+  stage: test
+  image: node:20-alpine
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+  script:
+    - npm run test:unit -- --coverage --reporter=default --reporter=junit --outputFile=./junit.xml || true
+  artifacts:
+    reports:
+      junit: junit.xml
+  allow_failure: true
+  only:
+    - branches
+    - merge_requests
+
+# ==========================================
+# QUALITY STAGE
+# ==========================================
+
+php-cs-fixer:
+  stage: quality
+  script:
+    - composer require --dev friendsofphp/php-cs-fixer --no-progress
+    - vendor/bin/php-cs-fixer fix --dry-run --diff --config=.php-cs-fixer.php || true
+  dependencies:
+    - composer
+  allow_failure: true
+  only:
+    - merge_requests
+
+phpstan:
+  stage: quality
+  script:
+    - composer require --dev phpstan/phpstan phpstan/phpstan-laravel --no-progress
+    - vendor/bin/phpstan analyse app --level=5 --memory-limit=1G || true
+  dependencies:
+    - composer
+  allow_failure: true
+  only:
+    - merge_requests
+
+eslint:
+  stage: quality
+  image: node:20-alpine
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+  script:
+    - npm run lint || true
+  allow_failure: true
+  only:
+    - merge_requests
+
+security-check:
+  stage: quality
+  script:
+    - composer require --dev enlightn/security-checker --no-progress
+    - vendor/bin/security-checker security:check composer.lock || true
+  dependencies:
+    - composer
+  allow_failure: true
+  only:
+    - branches
+    - merge_requests
+
+# ==========================================
+# DEPLOY STAGE
+# ==========================================
+
+# Deploy to Staging Server
+deploy_staging:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client rsync
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$SSH_KNOWN_HOSTS_STAGING" >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - echo "Deploying to staging server..."
+    # Sync files to server (excluding certain directories)
+    - rsync -avz --delete
+      --exclude='.git'
+      --exclude='.env'
+      --exclude='storage/app/*'
+      --exclude='storage/logs/*'
+      --exclude='storage/framework/cache/*'
+      --exclude='storage/framework/sessions/*'
+      --exclude='storage/framework/views/*'
+      --exclude='node_modules'
+      --exclude='tests'
+      -e "ssh -o StrictHostKeyChecking=no"
+      ./ $SSH_USER_STAGING@$SSH_HOST_STAGING:$DEPLOY_PATH_STAGING/
+    # Run deployment commands on server
+    - ssh -o StrictHostKeyChecking=no $SSH_USER_STAGING@$SSH_HOST_STAGING "
+        cd $DEPLOY_PATH_STAGING &&
+        composer install --no-dev --optimize-autoloader &&
+        php artisan migrate --force &&
+        php artisan config:cache &&
+        php artisan route:cache &&
+        php artisan view:cache &&
+        php artisan queue:restart &&
+        echo 'Staging deployment completed!'"
+  dependencies:
+    - composer
+    - npm
+  environment:
+    name: staging
+    url: $STAGING_URL
+  only:
+    - develop
+  when: manual
+
+# Deploy to Production Server
+deploy_production:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client rsync
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY_PRODUCTION" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$SSH_KNOWN_HOSTS_PRODUCTION" >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - echo "Deploying to production server..."
+    # Create backup on server before deployment
+    - ssh -o StrictHostKeyChecking=no $SSH_USER_PRODUCTION@$SSH_HOST_PRODUCTION "
+        cd $DEPLOY_PATH_PRODUCTION &&
+        php artisan down --message='Deploying updates. Back shortly!' --retry=60"
+    # Sync files to server
+    - rsync -avz --delete
+      --exclude='.git'
+      --exclude='.env'
+      --exclude='storage/app/*'
+      --exclude='storage/logs/*'
+      --exclude='storage/framework/cache/*'
+      --exclude='storage/framework/sessions/*'
+      --exclude='storage/framework/views/*'
+      --exclude='node_modules'
+      --exclude='tests'
+      -e "ssh -o StrictHostKeyChecking=no"
+      ./ $SSH_USER_PRODUCTION@$SSH_HOST_PRODUCTION:$DEPLOY_PATH_PRODUCTION/
+    # Run deployment commands on server
+    - ssh -o StrictHostKeyChecking=no $SSH_USER_PRODUCTION@$SSH_HOST_PRODUCTION "
+        cd $DEPLOY_PATH_PRODUCTION &&
+        composer install --no-dev --optimize-autoloader &&
+        php artisan migrate --force &&
+        php artisan config:cache &&
+        php artisan route:cache &&
+        php artisan view:cache &&
+        php artisan storage:link &&
+        php artisan queue:restart &&
+        php artisan up &&
+        echo 'Production deployment completed!'"
+  dependencies:
+    - composer
+    - npm
+  environment:
+    name: production
+    url: $PRODUCTION_URL
+  only:
+    - main
+    - master
+  when: manual
+
+# ==========================================
+# SCHEDULED JOBS
+# ==========================================
+
+# Database backup (runs daily via GitLab scheduler)
+database_backup:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY_PRODUCTION" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - echo "$SSH_KNOWN_HOSTS_PRODUCTION" >> ~/.ssh/known_hosts
+  script:
+    - ssh -o StrictHostKeyChecking=no $SSH_USER_PRODUCTION@$SSH_HOST_PRODUCTION "
+        cd $DEPLOY_PATH_PRODUCTION &&
+        php artisan backup:run --only-db"
+  only:
+    - schedules
+  when: always

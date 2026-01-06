@@ -19,12 +19,21 @@ return Application::configure(basePath: dirname(__DIR__))
             'customer' => \App\Http\Middleware\EnsureCustomer::class,
             'sanitize' => \App\Http\Middleware\SanitizeInput::class,
             'log.api' => \App\Http\Middleware\LogApiRequests::class,
+            'rate.auth' => \App\Http\Middleware\RateLimitAuth::class,
+            'audit' => \App\Http\Middleware\AuditLog::class,
+            'csp' => \App\Http\Middleware\ContentSecurityPolicy::class,
         ]);
 
-        // Apply throttle to API routes
+        // Apply global middleware
+        $middleware->web(append: [
+            \App\Http\Middleware\ContentSecurityPolicy::class,
+        ]);
+
+        // Apply throttle and security to API routes
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \App\Http\Middleware\SanitizeInput::class,
+            \App\Http\Middleware\AuditLog::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
