@@ -32,7 +32,7 @@ class ProductFactory extends Factory
             'available_stock' => fake()->numberBetween(0, 50),
             'status' => 'active',
             'is_featured' => fake()->boolean(20),
-            'visibility' => 'visible',
+            'visibility' => 1,
             'views_count' => fake()->numberBetween(0, 1000),
         ];
     }
