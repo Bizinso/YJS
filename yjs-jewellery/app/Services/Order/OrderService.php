@@ -264,6 +264,27 @@ class OrderService
                 Log::warning("Auto Shiprocket creation failed: " . $e->getMessage());
             }
         }
+
+        // Send order confirmation notification (email + database)
+        try {
+            \App\Jobs\SendOrderNotification::dispatch($order, 'confirmed');
+        } catch (\Exception $e) {
+            Log::warning("Failed to dispatch order notification: " . $e->getMessage());
+        }
+
+        // Send SMS notification
+        try {
+            $user = \App\Models\User::find($order->customer_id);
+            if ($user && $user->phone) {
+                app(\App\Services\Notification\SmsService::class)->sendOrderConfirmation(
+                    $user->phone,
+                    $order->custom_order_code,
+                    $order->order_total
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning("Failed to send order SMS: " . $e->getMessage());
+        }
     }
 
     /**

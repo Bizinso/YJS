@@ -136,17 +136,37 @@ class AuthController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Send Email
-        if ($isEmail) {
-            // mail logic...
-        } else {
-            // sms logic...
+        // Send OTP via Email or SMS
+        try {
+            if ($isEmail) {
+                \Mail::raw(
+                    "Your YJS Jewellers verification OTP is: {$otp}\n\nThis OTP is valid for 5 minutes. Do not share it with anyone.",
+                    function ($message) use ($identifier) {
+                        $message->to($identifier)
+                            ->subject('Your Verification OTP - YJS Jewellers');
+                    }
+                );
+            } else {
+                app(\App\Services\Notification\SmsService::class)->sendOtp($identifier, $otp);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to send OTP', [
+                'identifier' => $identifier,
+                'error' => $e->getMessage()
+            ]);
         }
 
-        return response()->json([
+        $response = [
             'status'  => true,
             'message' => 'OTP sent successfully',
-        ]);
+        ];
+
+        // Only include OTP in response for local/testing environment
+        if (app()->environment('local', 'testing')) {
+            $response['otp'] = $otp;
+        }
+
+        return response()->json($response);
     }
 
 
