@@ -48,9 +48,38 @@ class WebhookController extends Controller
 
         try {
             $payload = json_decode($rawBody, true);
-            
+
+            if (!is_array($payload)) {
+                Log::warning('Razorpay webhook: Invalid JSON payload');
+                return response()->json(['error' => 'Invalid JSON payload'], 400);
+            }
+
+            // Validate required webhook fields
+            if (empty($payload['event'])) {
+                Log::warning('Razorpay webhook: Missing event type');
+                return response()->json(['error' => 'Missing event type'], 400);
+            }
+
+            // Validate entity structure for payment/refund events
+            $paymentEvents = ['payment.authorized', 'payment.captured', 'payment.failed'];
+            $refundEvents = ['refund.processed', 'refund.failed'];
+
+            if (in_array($payload['event'], $paymentEvents)) {
+                if (empty($payload['payload']['payment']['entity']['id'])) {
+                    Log::warning('Razorpay webhook: Missing payment entity ID', ['event' => $payload['event']]);
+                    return response()->json(['error' => 'Missing payment entity'], 400);
+                }
+            }
+
+            if (in_array($payload['event'], $refundEvents)) {
+                if (empty($payload['payload']['refund']['entity']['id'])) {
+                    Log::warning('Razorpay webhook: Missing refund entity ID', ['event' => $payload['event']]);
+                    return response()->json(['error' => 'Missing refund entity'], 400);
+                }
+            }
+
             Log::info('Razorpay webhook received', [
-                'event' => $payload['event'] ?? 'unknown',
+                'event' => $payload['event'],
             ]);
 
             $result = $this->razorpay->processWebhook($payload);
@@ -85,6 +114,24 @@ class WebhookController extends Controller
 
         try {
             $payload = $request->all();
+
+            // Validate required Shiprocket webhook fields
+            if (empty($payload['awb']) && empty($payload['order_id']) && empty($payload['shipment_id'])) {
+                Log::warning('Shiprocket webhook: Missing identifier (awb, order_id, or shipment_id)');
+                return response()->json(['error' => 'Missing shipment identifier'], 400);
+            }
+
+            // Validate status field for status update webhooks
+            if (isset($payload['current_status']) && !is_string($payload['current_status'])) {
+                Log::warning('Shiprocket webhook: Invalid status format');
+                return response()->json(['error' => 'Invalid status format'], 400);
+            }
+
+            // Sanitize and validate AWB if present
+            if (!empty($payload['awb']) && !preg_match('/^[A-Za-z0-9]+$/', $payload['awb'])) {
+                Log::warning('Shiprocket webhook: Invalid AWB format', ['awb' => $payload['awb']]);
+                return response()->json(['error' => 'Invalid AWB format'], 400);
+            }
 
             Log::info('Shiprocket webhook received', [
                 'awb' => $payload['awb'] ?? 'N/A',

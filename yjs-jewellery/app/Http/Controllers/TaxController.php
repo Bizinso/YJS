@@ -64,11 +64,15 @@ class TaxController extends Controller
                 'tax_rate' => [
                     'required',
                     'numeric',
-                    'gt:0'
+                    'gt:0',
+                    'max:100'
                 ],
+                'description' => 'nullable|string|max:500',
             ], [
                 'tax_name.regex' => 'Tax name must contain only letters and numbers.',
                 'tax_rate.gt' => 'Tax rate must be greater than 0.',
+                'tax_rate.max' => 'Tax rate cannot exceed 100%.',
+                'description.max' => 'Description must not exceed 500 characters.',
             ]);
 
             if ($validator->fails()) {
@@ -115,11 +119,15 @@ class TaxController extends Controller
                 'tax_rate' => [
                     'required',
                     'numeric',
-                    'gt:0'
+                    'gt:0',
+                    'max:100'
                 ],
+                'description' => 'nullable|string|max:500',
             ], [
                 'tax_name.regex' => 'Tax name must contain only letters and numbers.',
                 'tax_rate.gt' => 'Tax rate must be greater than 0.',
+                'tax_rate.max' => 'Tax rate cannot exceed 100%.',
+                'description.max' => 'Description must not exceed 500 characters.',
             ]);
             
             if ($validator->fails()) {

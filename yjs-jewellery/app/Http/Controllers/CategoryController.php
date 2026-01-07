@@ -64,12 +64,18 @@ class CategoryController extends Controller
                                 ->whereNull('deleted_at');
                         }),
                 ],
+                'description' => 'nullable|string|max:1000',
+                'parent_id' => 'nullable|integer|exists:categories,id',
+                'status' => 'nullable|string|in:A,I',
             ];
 
             $messages = [
                 'name.required' => 'Please enter a category name.',
                 'name.regex' => 'Category name must contain alphabets only.',
                 'name.unique' => 'The category already exists under this parent.',
+                'description.max' => 'Description must not exceed 1000 characters.',
+                'parent_id.exists' => 'Selected parent category does not exist.',
+                'status.in' => 'Status must be A (Active) or I (Inactive).',
             ];
 
             $validator = Validator::make($request->all(), $rules, $messages);
@@ -155,10 +161,16 @@ class CategoryController extends Controller
                                 ->whereNull('deleted_at');
                         }),
                 ],
+                'description' => 'nullable|string|max:1000',
+                'parent_id' => 'nullable|integer|exists:categories,id',
+                'status' => 'nullable|string|in:A,I',
             ], [
                 'name.required' => 'Please enter a category name.',
                 'name.regex' => 'Category name must contain alphabets only.',
                 'name.unique' => 'The category already exists under this parent.',
+                'description.max' => 'Description must not exceed 1000 characters.',
+                'parent_id.exists' => 'Selected parent category does not exist.',
+                'status.in' => 'Status must be A (Active) or I (Inactive).',
             ]);
 
             if ($validator->fails()) {
