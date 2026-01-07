@@ -15,22 +15,6 @@ use Exception;
 class InvoiceService
 {
     /**
-     * Company details for invoice header.
-     */
-    private array $companyDetails = [
-        'name' => 'YJS Jewellers',
-        'address' => 'Shop No. 123, Gold Market',
-        'city' => 'Mumbai',
-        'state' => 'Maharashtra',
-        'pincode' => '400001',
-        'country' => 'India',
-        'phone' => '+91 9876543210',
-        'email' => 'support@yjsjewellers.com',
-        'gstin' => 'GSTIN1234567890',
-        'pan' => 'AAACY1234Z',
-    ];
-
-    /**
      * Generate invoice data for an order.
      *
      * @param Order $order
@@ -101,23 +85,23 @@ class InvoiceService
     }
 
     /**
-     * Get company details.
+     * Get company details from config/env.
      *
      * @return array
      */
     private function getCompanyDetails(): array
     {
         return [
-            'name' => config('app.company_name', $this->companyDetails['name']),
-            'address' => config('app.company_address', $this->companyDetails['address']),
-            'city' => config('app.company_city', $this->companyDetails['city']),
-            'state' => config('app.company_state', $this->companyDetails['state']),
-            'pincode' => config('app.company_pincode', $this->companyDetails['pincode']),
-            'country' => 'India',
-            'phone' => config('app.company_phone', $this->companyDetails['phone']),
-            'email' => config('app.company_email', $this->companyDetails['email']),
-            'gstin' => config('app.company_gstin', $this->companyDetails['gstin']),
-            'pan' => config('app.company_pan', $this->companyDetails['pan']),
+            'name' => config('company.name', env('COMPANY_NAME', 'YJS Jewellers')),
+            'address' => config('company.address', env('COMPANY_ADDRESS', 'Shop No. 123, Gold Market')),
+            'city' => config('company.city', env('COMPANY_CITY', 'Mumbai')),
+            'state' => config('company.state', env('COMPANY_STATE', 'Maharashtra')),
+            'pincode' => config('company.pincode', env('COMPANY_PINCODE', '400001')),
+            'country' => config('company.country', env('COMPANY_COUNTRY', 'India')),
+            'phone' => config('company.phone', env('COMPANY_PHONE', '+91 9876543210')),
+            'email' => config('company.email', env('COMPANY_EMAIL', 'support@yjsjewellers.com')),
+            'gstin' => config('company.gstin', env('COMPANY_GSTIN', '')),
+            'pan' => config('company.pan', env('COMPANY_PAN', '')),
         ];
     }
 

@@ -260,7 +260,8 @@ class PartnerPasswordController extends Controller
             ], 404);
         }
 
-        $otp = 123456; // In production: rand(100000, 999999);
+        // Generate OTP (6-digit random number)
+        $otp = rand(100000, 999999);
 
         DB::table('otps')->where('identifier', $identifier)->delete();
 
@@ -272,11 +273,26 @@ class PartnerPasswordController extends Controller
             'updated_at' => now(),
         ]);
 
-        return response()->json([
+        // Send OTP via email/SMS
+        if ($isEmail) {
+            \Mail::raw("Your password reset OTP is: {$otp}. Valid for 10 minutes.", function ($message) use ($identifier) {
+                $message->to($identifier)->subject('Partner Password Reset OTP - YJS Jewellers');
+            });
+        } else {
+            app(\App\Services\Notification\SmsService::class)->send($identifier, "Your YJS Jewellers partner password reset OTP is: {$otp}. Valid for 10 minutes.");
+        }
+
+        $response = [
             'success' => true,
             'message' => 'OTP sent to your ' . ($isEmail ? 'email' : 'phone') . '.',
-            'otp' => $otp, // Remove in production
-        ]);
+        ];
+
+        // Only include OTP in response for local/testing environment
+        if (app()->environment('local', 'testing')) {
+            $response['otp'] = $otp;
+        }
+
+        return response()->json($response);
     }
 
     /**
