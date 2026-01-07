@@ -3,6 +3,12 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -37,5 +43,68 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Standardized API error responses
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'error' => 'Unauthenticated',
+                    'message' => 'You must be logged in to access this resource.',
+                    'code' => 401,
+                ], 401);
+            }
+        });
+
+        $exceptions->render(function (ValidationException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'error' => 'Validation failed',
+                    'errors' => $e->errors(),
+                    'code' => 422,
+                ], 422);
+            }
+        });
+
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'error' => 'Not found',
+                    'message' => 'The requested resource was not found.',
+                    'code' => 404,
+                ], 404);
+            }
+        });
+
+        $exceptions->render(function (MethodNotAllowedHttpException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'error' => 'Method not allowed',
+                    'message' => 'The HTTP method is not supported for this route.',
+                    'code' => 405,
+                ], 405);
+            }
+        });
+
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'error' => 'HTTP error',
+                    'message' => $e->getMessage() ?: 'An error occurred.',
+                    'code' => $e->getStatusCode(),
+                ], $e->getStatusCode());
+            }
+        });
+
+        // Catch-all for unexpected exceptions in API routes
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                $statusCode = 500;
+                $message = config('app.debug') ? $e->getMessage() : 'An unexpected error occurred.';
+
+                return response()->json([
+                    'error' => 'Server error',
+                    'message' => $message,
+                    'code' => $statusCode,
+                ], $statusCode);
+            }
+        });
     })->create();
