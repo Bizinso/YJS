@@ -1,14 +1,17 @@
 <template>
+  <!-- Customer frontend layout -->
   <div v-if="layout === 'full'">
     <Header />
     <router-view />
     <Footer />
   </div>
 
+  <!-- Admin auth pages (login, forgot password) - no sidebar -->
   <div v-else-if="layout === 'adminFull'">
     <router-view />
   </div>
 
+  <!-- Admin panel with sidebar (default for authenticated admin routes) -->
   <div v-else class="DefaultLayout">
     <Sidebar />
 
@@ -25,14 +28,13 @@
 
 
 <script setup>
-import { ref, provide, watch, defineAsyncComponent, onMounted } from "vue";
+import { ref, provide, watch, defineAsyncComponent } from "vue";
 import { useRoute } from "vue-router";
 
 import Header from "./views/layout/Header.vue";
 import Footer from "./views/layout/Footer.vue";
 import HeaderAdmin from "./views/layout/HeaderAdmin.vue";
 import FooterAdmin from "./views/layout/FooterAdmin.vue";
-// import Sidebar from "./views/layout/Sidebar.vue";
 const Sidebar = defineAsyncComponent(() =>
   import("./views/layout/Sidebar.vue")
 );
@@ -50,5 +52,4 @@ watch(
   },
   { immediate: true }
 );
-
 </script>

@@ -414,7 +414,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
-import axiosEmployee from '@axiosEmployee'
+import axios from '@/plugins/axiosAdmin'
 import { toast } from "vue3-toastify"
 
 // State
@@ -538,7 +538,7 @@ async function fetchOffers() {
       ...(searchQuery.value && { search: searchQuery.value })
     })
 
-    const { data } = await axiosEmployee.get(`/admin/advanced-offers?${params}`)
+    const { data } = await axios.get(`/advanced-offers?${params}`)
     if (data.success) {
       offers.value = data.offers || []
       pagination.current_page = data.pagination?.current_page || 1
@@ -555,7 +555,7 @@ async function fetchOffers() {
 
 async function fetchOfferTypes() {
   try {
-    const { data } = await axiosEmployee.get('/admin/advanced-offers/types')
+    const { data } = await axios.get('/advanced-offers/types')
     if (data.success) {
       offerTypes.value = data.offer_types || []
     }
@@ -566,7 +566,7 @@ async function fetchOfferTypes() {
 
 async function fetchStats() {
   try {
-    const { data } = await axiosEmployee.get('/admin/advanced-offers/analytics')
+    const { data } = await axios.get('/offers/summary')
     if (data.success) {
       stats.value = {
         active_offers: data.analytics?.active_offers || 0,
@@ -616,9 +616,9 @@ async function saveOffer() {
 
     let response
     if (editingOffer.value) {
-      response = await axiosEmployee.put(`/admin/advanced-offers/${editingOffer.value.id}`, payload)
+      response = await axios.put(`/advanced-offers/${editingOffer.value.id}`, payload)
     } else {
-      response = await axiosEmployee.post('/admin/advanced-offers', payload)
+      response = await axios.post('/advanced-offers', payload)
     }
 
     if (response.data.success) {
@@ -637,7 +637,7 @@ async function saveOffer() {
 
 async function duplicateOffer(offer) {
   try {
-    const { data } = await axiosEmployee.post(`/admin/advanced-offers/${offer.id}/duplicate`)
+    const { data } = await axios.post(`/advanced-offers/${offer.id}/duplicate`)
     if (data.success) {
       toast.success('Offer duplicated!')
       fetchOffers()
@@ -649,7 +649,7 @@ async function duplicateOffer(offer) {
 
 async function toggleStatus(offer) {
   try {
-    const { data } = await axiosEmployee.put(`/admin/advanced-offers/${offer.id}`, {
+    const { data } = await axios.put(`/advanced-offers/${offer.id}`, {
       is_active: !offer.is_active
     })
     if (data.success) {
@@ -665,7 +665,7 @@ async function deleteOffer(offer) {
   if (!confirm(`Delete "${offer.name}"?`)) return
 
   try {
-    await axiosEmployee.delete(`/admin/advanced-offers/${offer.id}`)
+    await axios.delete(`/advanced-offers/${offer.id}`)
     toast.success('Offer deleted!')
     fetchOffers()
     fetchStats()

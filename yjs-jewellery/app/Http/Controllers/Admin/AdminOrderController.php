@@ -48,7 +48,7 @@ class AdminOrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Order::with([
-            'customer:id,name,email,phone',
+            'customer:id,first_name,last_name,email,phone',
             'billingAddress:id,full_name,city,state',
             'shippingAddress:id,full_name,city,state',
             'orderProducts:id,order_id,product_id,quantity,total',
@@ -1122,7 +1122,7 @@ class AdminOrderController extends Controller
         }
 
         $query = Order::with([
-            'customer:id,name,email,phone',
+            'customer:id,first_name,last_name,email,phone',
             'orderProducts:id,order_id,product_id,quantity,total',
             'orderProducts.product:id,name,sku',
             'shippingAddress:id,full_name,city,state,pincode',

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Partner;
 use App\Models\OrderPayment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -156,12 +157,10 @@ class AdminDashboardController extends Controller
             ->whereBetween('created_at', [$startDate, $endDate])
             ->count();
 
-        $totalPartners = User::where('user_type', 'partner')
-            ->where('status', 'active')
+        $totalPartners = Partner::where('status', 'approved')
             ->count();
 
-        $pendingPartners = User::where('user_type', 'partner')
-            ->where('partner_status', 'pending')
+        $pendingPartners = Partner::where('status', 'pending')
             ->count();
 
         return [

@@ -65,7 +65,10 @@ class menuSeeder extends Seeder
 
         $createMenu('Orders', 'admin.orders', 'fa-solid fa-cart-shopping', 3);
 
-        $createMenu('Offers', 'admin.offers', 'fa-solid fa-gift', 4);
+        $createMenu('Offers', 'admin.offers', 'fa-solid fa-gift', 4, [
+            ['title' => 'Advanced Offers', 'slug' => 'admin.advanced-offers', 'order' => 1],
+            ['title' => 'Loyalty Program', 'slug' => 'admin.loyalty', 'order' => 2],
+        ]);
 
         $createMenu('Customers', 'admin.customers', 'fa-solid fa-user-group', 5);
 
@@ -73,39 +76,54 @@ class menuSeeder extends Seeder
 
         $createMenu('Inquiries', 'admin.inquiries', 'fa-solid fa-envelope', 7);
 
+        // Warehouse & Inventory
+        $createMenu('Inventory', 'admin.warehouse', 'fa-solid fa-warehouse', 8);
+
+        // Returns & Exchanges
+        $createMenu('Returns', 'admin.returns-management', 'fa-solid fa-rotate-left', 9);
+
+        // Reports
+        $createMenu('Reports', 'admin.reports', 'fa-solid fa-chart-bar', 10);
+
+        // Finance
+        $createMenu('Finance', 'admin.finance', 'fa-solid fa-coins', 11);
+
+        // Partner Inquiries
+        $createMenu('B2B Inquiries', 'admin.partner-inquiries', 'fa-solid fa-briefcase', 12);
+
         // Access Control
-        $createMenu('Access Control', 'admin.access-control', 'fa-solid fa-shield-halved', 8, [
+        $createMenu('Access Control', 'admin.access-control', 'fa-solid fa-shield-halved', 13, [
             ['title' => 'Users', 'slug' => 'admin.access.users', 'order' => 1],
             ['title' => 'Permissions', 'slug' => 'admin.access.permissions', 'order' => 3],
         ]);
 
         // CMS
-        $createMenu('CMS', 'admin.cms', 'fa-solid fa-note-sticky', 9, [
+        $createMenu('CMS', 'admin.cms', 'fa-solid fa-note-sticky', 14, [
             ['title' => 'Pages', 'slug' => 'admin.cms.pages', 'order' => 1],
             ['title' => 'Sliders', 'slug' => 'admin.cms.sliders', 'order' => 2],
         ]);
 
         // Blog
-        $createMenu('Blog', 'admin.blog', 'fa-solid fa-blog', 10, [
+        $createMenu('Blog', 'admin.blog', 'fa-solid fa-blog', 15, [
             ['title' => 'Blog List', 'slug' => 'admin.blog.index', 'order' => 1],
             ['title' => 'Blog Categories', 'slug' => 'admin.blog.categories', 'order' => 2],
         ]);
 
         // Events
-        $createMenu('Events', 'admin.events', 'fa-solid fa-calendar', 11);
+        $createMenu('Events', 'admin.events', 'fa-solid fa-calendar', 16);
 
         // Exhibition
-        $createMenu('Exhibitions', 'admin.exhibitions', 'fa-solid fa-building', 12);
+        $createMenu('Exhibitions', 'admin.exhibitions', 'fa-solid fa-building', 17);
 
         // Brochures
-        $createMenu('Brochures', 'admin.brochures', 'fa-solid fa-book-open', 13);
+        $createMenu('Brochures', 'admin.brochures', 'fa-solid fa-book-open', 18);
 
         // Feedback
-        $createMenu('Feedback', 'admin.feedback', 'fa-solid fa-comment-dots', 14);
+        $createMenu('Feedback', 'admin.feedback', 'fa-solid fa-comment-dots', 19);
 
 
         // Settings
-        $createMenu('Settings', 'admin.settings', 'fa-solid fa-gear', 15, [
+        $createMenu('Settings', 'admin.settings', 'fa-solid fa-gear', 20, [
 
             // -------------------------
             // General Settings Section
