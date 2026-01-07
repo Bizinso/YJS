@@ -126,6 +126,8 @@ import FinanceDashboard from '../views/admin/finance/FinanceDashboard.vue'
 import SupportTickets from '../views/admin/support/SupportTickets.vue'
 import UserManagement from '../views/admin/users/UserManagement.vue'
 import AdvancedOffers from '../views/admin/offers/AdvancedOffers.vue'
+import LoyaltyManagement from '../views/admin/loyalty/LoyaltyManagement.vue'
+import BulkOperations from '../views/admin/products/BulkOperations.vue'
 const routes = [
   // -------------------------
   // FRONTEND ROUTES
@@ -239,6 +241,12 @@ const routes = [
 
   // Advanced Offers
   { path: '/admin/advanced-offers', name: 'admin.advanced-offers', component: AdvancedOffers, meta: { requiresAuth: true, title: "Advanced Offers", parent: "Marketing" } },
+
+  // Loyalty Management
+  { path: '/admin/loyalty', name: 'admin.loyalty', component: LoyaltyManagement, meta: { requiresAuth: true, title: "Loyalty Management", parent: "Marketing" } },
+
+  // Bulk Operations
+  { path: '/admin/products/bulk', name: 'admin.products.bulk', component: BulkOperations, meta: { requiresAuth: true, title: "Bulk Operations", parent: "Products" } },
 
   // -------------------------
   // SETTINGS
