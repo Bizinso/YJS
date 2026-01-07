@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderPayment;
 use App\Models\OrderRefund;
 use App\Models\Product;
+use App\Services\Notification\NotificationService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -23,14 +24,16 @@ use Illuminate\Support\Str;
 class RazorpayService
 {
     private const API_BASE_URL = 'https://api.razorpay.com/v1';
-    
+
     private string $keyId;
     private string $keySecret;
     private string $webhookSecret;
     private bool $isLive;
+    private NotificationService $notificationService;
 
-    public function __construct()
+    public function __construct(NotificationService $notificationService)
     {
+        $this->notificationService = $notificationService;
         $this->isLive = config('services.razorpay.mode', 'test') === 'live';
         
         $this->keyId = $this->isLive 
@@ -397,6 +400,17 @@ class RazorpayService
                     'paid_at' => now(),
                 ]);
             });
+
+            // Send payment success notification
+            try {
+                $this->notificationService->sendPaymentSuccess(
+                    $payment->order,
+                    $payment->amount,
+                    $paymentData['id']
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to send payment notification', ['error' => $e->getMessage()]);
+            }
         }
 
         return ['success' => true];
@@ -432,6 +446,16 @@ class RazorpayService
                     'razorpay_order_id' => $orderId,
                 ]);
             });
+
+            // Send payment failed notification
+            try {
+                $this->notificationService->sendPaymentFailed(
+                    $payment->order,
+                    $paymentData['error_description'] ?? 'Payment failed'
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to send payment failed notification', ['error' => $e->getMessage()]);
+            }
         }
 
         return ['success' => true];
@@ -440,13 +464,27 @@ class RazorpayService
     private function handleRefundProcessed(array $payload): array
     {
         $refundData = $payload['payload']['refund']['entity'];
-        
+
         $refund = OrderRefund::where('razorpay_refund_id', $refundData['id'])->first();
         if ($refund) {
             $refund->update([
                 'status' => 'processed',
                 'processed_at' => now(),
             ]);
+
+            // Send refund notification
+            try {
+                $order = $refund->order;
+                if ($order) {
+                    $this->notificationService->sendRefundProcessed(
+                        $order,
+                        $refund->amount / 100, // Convert paise to rupees
+                        $refundData['id']
+                    );
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to send refund notification', ['error' => $e->getMessage()]);
+            }
         }
 
         return ['success' => true];

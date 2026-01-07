@@ -4,6 +4,8 @@ namespace App\Services\Shipping;
 
 use App\Models\Order;
 use App\Models\ShipmentTracking;
+use App\Services\Notification\NotificationService;
+use App\Services\Notification\SmsService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -478,6 +480,8 @@ class ShiprocketService
 
         $newStatus = $statusMap[$statusId] ?? null;
 
+        $oldStatus = $order->order_status;
+
         DB::transaction(function () use ($order, $status, $newStatus, $payload) {
             ShipmentTracking::where('order_id', $order->id)->update([
                 'current_status' => $status,
@@ -494,11 +498,11 @@ class ShiprocketService
                     'order_status' => $newStatus,
                     'shipping_status' => $status,
                 ];
-                
+
                 if ($newStatus === 'delivered') {
                     $updateData['delivery_date'] = now()->toDateString();
                 }
-                
+
                 $order->update($updateData);
 
                 // Handle RTO - restore inventory
@@ -508,7 +512,55 @@ class ShiprocketService
             }
         });
 
+        // Send notifications for shipping status updates
+        if ($newStatus && $newStatus !== $oldStatus) {
+            $this->sendShippingNotifications($order, $newStatus, $status);
+        }
+
         return ['success' => true];
+    }
+
+    /**
+     * Send shipping notifications via email, database, and SMS
+     */
+    private function sendShippingNotifications(Order $order, string $newStatus, string $statusText): void
+    {
+        try {
+            $notificationService = app(NotificationService::class);
+            $smsService = app(SmsService::class);
+
+            // Database + Email notification
+            $notificationService->sendShippingUpdate($order, $newStatus, [
+                'status_text' => $statusText,
+            ]);
+
+            // SMS notification for important statuses
+            $customer = $order->customer;
+            if ($customer && $customer->phone) {
+                if ($newStatus === 'shipped') {
+                    $smsService->sendOrderShipped(
+                        $customer->phone,
+                        $order->custom_order_code,
+                        $order->awb_number ?? ''
+                    );
+                } elseif ($newStatus === 'delivered') {
+                    $smsService->sendOrderDelivered(
+                        $customer->phone,
+                        $order->custom_order_code
+                    );
+                }
+            }
+
+            Log::info('Shipping notifications sent', [
+                'order_id' => $order->id,
+                'status' => $newStatus,
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Failed to send shipping notifications', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
