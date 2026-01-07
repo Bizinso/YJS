@@ -1,7 +1,5 @@
 <template>
   <div>
-
-
     <div class="cartHeadingBox">
       <nav class="breadcrumb postts">
         <a href="/" class="crumb">Home</a>
@@ -10,7 +8,16 @@
       </nav>
       <h2 class="text-black">Cart</h2>
     </div>
-    <div class="nodata" v-if="itemLength">
+
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2 text-muted">Loading your cart...</p>
+    </div>
+
+    <div class="nodata" v-else-if="itemLength">
       <div class="noCartData">
         <img src="../assets/img/noDataCart.svg" alt="div 1" />
         <h5>Your cart is empty.</h5>
@@ -282,26 +289,158 @@
 }
 </style>
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted, reactive } from "vue";
+import { useRouter } from "vue-router";
 import axiosCustomer from "@axiosCustomer";
+import { toast } from "vue3-toastify";
+import RelatedProducts from "../../components/RelatedProducts.vue";
+import WishlistButton from "../../components/WishlistButton.vue";
 
+const router = useRouter();
+
+// State
 const cartItems = ref([]);
 const cartSubtotal = ref(0);
 const carttotal = ref(0);
 const totalCharges = ref(0);
 const totalTaxes = ref(0);
+const totalDiscount = ref(0);
 const grandTotal = ref(0);
+const loading = ref(false);
+const errorMessage = ref("");
+const showDeleteModal = ref(false);
+const itemToDelete = ref(null);
+const fallbackImage = "/images/placeholder-product.png";
 
+// Sidebar state
+const sidebarstatus = reactive({
+  filter: false,
+  shadow: false
+});
+
+// Computed
+const itemLength = computed(() => cartItems.value.length === 0);
+const productIDS = computed(() => cartItems.value.map(item => item.product_id));
+
+// Fetch cart data
 const fetchCart = async () => {
-  const res = await axiosCustomer.get(`/cart`);
-  cartItems.value = res.data.data;
+  loading.value = true;
+  errorMessage.value = "";
+  try {
+    const res = await axiosCustomer.get(`/cart`);
+    cartItems.value = res.data.data || [];
+    cartSubtotal.value = Number(res.data.cart_subtotal || 0);
+    carttotal.value = Number(res.data.carttotal || 0);
+    totalCharges.value = Number(res.data.total_charges || 0);
+    totalTaxes.value = Number(res.data.total_taxes || 0);
+    totalDiscount.value = Number(res.data.total_discount || 0);
+    grandTotal.value = Number(res.data.grand_total || carttotal.value || 0);
+  } catch (err) {
+    console.error("Failed to fetch cart:", err);
+    errorMessage.value = err.response?.data?.message || "Failed to load cart";
+    toast.error("Failed to load cart");
+  } finally {
+    loading.value = false;
+  }
+};
 
-  cartSubtotal.value = Number(res.data.cart_subtotal || 0);
-  carttotal.value = Number(res.data.carttotal || 0);
-  totalCharges.value = Number(res.data.total_charges || 0);
-  totalTaxes.value = Number(res.data.total_taxes || 0);
-  grandTotal.value = carttotal.value;
+// Navigate to product details
+const goToProductDetails = (product) => {
+  if (product?.slug) {
+    router.push(`/product/${product.slug}`);
+  } else if (product?.id) {
+    router.push(`/product/${product.id}`);
+  }
+};
 
+// Quantity management
+const decreaseQty = async (item) => {
+  if (item.quantity <= 1) return;
+  item.quantity--;
+  await updateCartQuantity(item);
+};
+
+const increaseQty = async (item) => {
+  if (item.quantity >= item.product.remaining_stock) {
+    errorMessage.value = "Maximum stock reached";
+    return;
+  }
+  item.quantity++;
+  await updateCartQuantity(item);
+};
+
+const updateCartQuantity = async (item) => {
+  errorMessage.value = "";
+  try {
+    await axiosCustomer.put(`/cart/${item.id}`, {
+      quantity: item.quantity
+    });
+    await fetchCart();
+  } catch (err) {
+    console.error("Failed to update quantity:", err);
+    errorMessage.value = err.response?.data?.message || "Failed to update quantity";
+    toast.error("Failed to update quantity");
+    await fetchCart(); // Refresh to get correct state
+  }
+};
+
+// Delete item
+const openDeleteModal = (item) => {
+  itemToDelete.value = item;
+  showDeleteModal.value = true;
+};
+
+const confirmDelete = async () => {
+  if (!itemToDelete.value) return;
+  try {
+    await axiosCustomer.delete(`/cart/${itemToDelete.value.id}`);
+    toast.success("Item removed from cart");
+    showDeleteModal.value = false;
+    itemToDelete.value = null;
+    await fetchCart();
+  } catch (err) {
+    console.error("Failed to remove item:", err);
+    toast.error("Failed to remove item");
+  }
+};
+
+const removeFromCart = async (item) => {
+  try {
+    await axiosCustomer.delete(`/cart/${item.id}`);
+    toast.success("Item removed from cart");
+    await fetchCart();
+  } catch (err) {
+    console.error("Failed to remove item:", err);
+    toast.error("Failed to remove item");
+  }
+};
+
+// Share functionality
+const openShare = (product) => {
+  const url = `${window.location.origin}/product/${product.slug || product.id}`;
+  if (navigator.share) {
+    navigator.share({
+      title: product.name,
+      text: `Check out ${product.name} at YJS Jewellers`,
+      url: url
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard!");
+  }
+};
+
+// Navigation
+const handleCheckout = () => {
+  if (cartItems.value.length === 0) {
+    toast.warning("Your cart is empty");
+    return;
+  }
+  router.push("/checkout");
+};
+
+const continueShopping = () => {
+  router.push("/products");
 };
 
 onMounted(fetchCart);

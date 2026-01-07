@@ -697,18 +697,26 @@ const payWithRazorpay = async () => {
 
     const { data } = await axios.post("/razorpay/order", { amount });
 
+    // Get selected address for prefill data
+    const selectedAddress = addresses.value.find(addr => addr.id === selectedAddressId.value);
+    const customerName = selectedAddress
+      ? `${selectedAddress.first_name || ''} ${selectedAddress.last_name || ''}`.trim()
+      : '';
+    const customerEmail = selectedAddress?.email || localStorage.getItem('customer_email') || '';
+    const customerPhone = selectedAddress?.phone || localStorage.getItem('customer_phone') || '';
+
     const options = {
       key: data.razorpay_key,
       amount: data.amount,
       currency: data.currency,
-      name: "My Shop",
+      name: "YJS Jewellers",
       description: "Order Payment",
       order_id: data.order_id,
       handler: handlePaymentSuccess,
       prefill: {
-        name: "John Doe",
-        email: "john@example.com",
-        contact: "9999999999",
+        name: customerName,
+        email: customerEmail,
+        contact: customerPhone,
       },
        modal: {
             ondismiss: async function () {
@@ -717,7 +725,7 @@ const payWithRazorpay = async () => {
               toast.warning("Payment was not completed. Please try again.");
               },
             },
-      theme: { color: "#528FF0" },
+      theme: { color: "#B44536" },
     };
 
     const rzp = new window.Razorpay(options);
