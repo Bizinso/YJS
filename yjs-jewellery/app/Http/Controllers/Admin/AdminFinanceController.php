@@ -204,7 +204,7 @@ class AdminFinanceController extends Controller
     {
         $query = RefundRequest::with([
             'order:id,custom_order_code,order_total',
-            'user:id,name,email',
+            'user:id,first_name,last_name,email',
             'reviewedByUser:id,name',
             'approvedByUser:id,name',
         ]);
@@ -226,7 +226,7 @@ class AdminFinanceController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('refund_code', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%")
+                        $q->where('first_name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%");
                     })
                     ->orWhereHas('order', function ($q) use ($search) {
@@ -252,7 +252,7 @@ class AdminFinanceController extends Controller
         $refund = RefundRequest::with([
             'order.customer:id,name,email,phone',
             'order.orderProducts.product:id,name,sku',
-            'user:id,name,email',
+            'user:id,first_name,last_name,email',
             'reviewedByUser:id,name',
             'approvedByUser:id,name',
             'statusHistory.changedByUser:id,name',
@@ -507,7 +507,7 @@ class AdminFinanceController extends Controller
     public function creditNotes(Request $request): JsonResponse
     {
         $query = CreditNote::with([
-            'user:id,name,email',
+            'user:id,first_name,last_name,email',
             'order:id,custom_order_code',
             'createdByUser:id,name',
         ]);
@@ -523,7 +523,7 @@ class AdminFinanceController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('credit_note_number', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%")
+                        $q->where('first_name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%");
                     });
             });
@@ -574,7 +574,7 @@ class AdminFinanceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Credit note created',
-                'data' => $creditNote->load('user:id,name,email'),
+                'data' => $creditNote->load('user:id,first_name,last_name,email'),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -590,7 +590,7 @@ class AdminFinanceController extends Controller
     public function showCreditNote(int $id): JsonResponse
     {
         $creditNote = CreditNote::with([
-            'user:id,name,email',
+            'user:id,first_name,last_name,email',
             'order:id,custom_order_code',
             'refund:id,refund_code',
             'usages.order:id,custom_order_code',
@@ -772,7 +772,7 @@ class AdminFinanceController extends Controller
     {
         $query = OutstandingPayment::with([
             'order:id,custom_order_code,order_total',
-            'user:id,name,email,phone',
+            'user:id,first_name,last_name,email,phone',
         ]);
 
         if ($request->status) {

@@ -372,7 +372,7 @@ class AdminShippingController extends Controller
             ->whereDate('delivery_date', '>=', now()->subDays(30))
             ->whereNotNull('delivery_date')
             ->whereNotNull('order_date')
-            ->selectRaw('AVG(JULIANDAY(delivery_date) - JULIANDAY(order_date)) as avg_days')
+            ->selectRaw('AVG(DATEDIFF(delivery_date, order_date)) as avg_days')
             ->value('avg_days');
 
         // Courier breakdown

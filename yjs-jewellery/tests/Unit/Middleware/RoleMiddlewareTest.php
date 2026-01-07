@@ -23,7 +23,7 @@ class RoleMiddlewareTest extends TestCase
         $token = $employee->createToken('test', ['employee'])->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->getJson('/api/employee/dashboard');
+            ->getJson('/api/admin/dashboard');
 
         $this->assertNotEquals(403, $response->getStatusCode());
     }
@@ -38,7 +38,7 @@ class RoleMiddlewareTest extends TestCase
         $token = $customer->createToken('test', ['customer'])->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->getJson('/api/employee/dashboard');
+            ->getJson('/api/admin/dashboard');
 
         $response->assertStatus(403);
     }
@@ -55,7 +55,7 @@ class RoleMiddlewareTest extends TestCase
         $token = $partnerUser->createToken('test', ['partner'])->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->getJson('/api/employee/dashboard');
+            ->getJson('/api/admin/dashboard');
 
         $response->assertStatus(403);
     }

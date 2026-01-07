@@ -29,7 +29,7 @@ class ReturnController extends Controller
             $user = Auth::user();
 
             $returns = ReturnRequest::forUser($user->id)
-                ->with(['order:id,order_number,total_amount', 'items.product:id,name,main_image'])
+                ->with(['order:id,custom_order_code,total_amount', 'items.product:id,name,main_image'])
                 ->when($request->status, function ($query, $status) {
                     $query->where('status', $status);
                 })
@@ -291,7 +291,7 @@ class ReturnController extends Controller
 
             $returnRequest = ReturnRequest::forUser($user->id)
                 ->with([
-                    'order:id,order_number,total_amount,status',
+                    'order:id,custom_order_code,total_amount,status',
                     'items.product:id,name,main_image,sku',
                     'items.orderItem',
                     'statusHistory.changedByUser:id,name',

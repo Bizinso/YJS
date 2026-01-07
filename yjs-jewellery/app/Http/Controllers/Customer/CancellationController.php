@@ -29,7 +29,7 @@ class CancellationController extends Controller
             $user = Auth::user();
 
             $cancellations = CancellationRequest::forUser($user->id)
-                ->with(['order:id,order_number,total_amount'])
+                ->with(['order:id,custom_order_code,total_amount'])
                 ->when($request->status, function ($query, $status) {
                     $query->where('status', $status);
                 })
@@ -257,7 +257,7 @@ class CancellationController extends Controller
 
             $cancellationRequest = CancellationRequest::forUser($user->id)
                 ->with([
-                    'order:id,order_number,total_amount,status',
+                    'order:id,custom_order_code,total_amount,status',
                     'items.product:id,name,main_image,sku',
                     'items.orderItem',
                     'statusHistory.changedByUser:id,name',

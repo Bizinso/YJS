@@ -49,7 +49,7 @@ class AdminExchangeController extends Controller
                     ExchangeRequest::STATUS_UNDER_REVIEW,
                     ExchangeRequest::STATUS_RETURN_RECEIVED,
                 ])
-                ->with(['user:id,name,email', 'order:id,order_number'])
+                ->with(['user:id,first_name,last_name,email', 'order:id,custom_order_code'])
                 ->orderBy('created_at', 'asc')
                 ->limit(10)
                 ->get();
@@ -77,8 +77,8 @@ class AdminExchangeController extends Controller
     {
         try {
             $query = ExchangeRequest::with([
-                'user:id,name,email',
-                'order:id,order_number,total_amount',
+                'user:id,first_name,last_name,email',
+                'order:id,custom_order_code,total_amount',
                 'items:id,exchange_request_id,original_product_id,new_product_id',
             ]);
 
@@ -116,11 +116,11 @@ class AdminExchangeController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('exchange_code', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($uq) use ($search) {
-                            $uq->where('name', 'like', "%{$search}%")
+                            $uq->where('first_name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
                         })
                         ->orWhereHas('order', function ($oq) use ($search) {
-                            $oq->where('order_number', 'like', "%{$search}%");
+                            $oq->where('custom_order_code', 'like', "%{$search}%");
                         });
                 });
             }
@@ -152,8 +152,8 @@ class AdminExchangeController extends Controller
     {
         try {
             $exchangeRequest = ExchangeRequest::with([
-                'user:id,name,email,phone',
-                'order:id,order_number,total_amount,status,created_at',
+                'user:id,first_name,last_name,email,phone',
+                'order:id,custom_order_code,total_amount,status,created_at',
                 'order.orderProducts.product:id,name,sku,main_image',
                 'items.originalProduct:id,name,sku,main_image,final_price',
                 'items.newProduct:id,name,sku,main_image,final_price,available_stock',
@@ -654,8 +654,8 @@ class AdminExchangeController extends Controller
     {
         try {
             $query = ExchangeRequest::with([
-                'user:id,name,email',
-                'order:id,order_number',
+                'user:id,first_name,last_name,email',
+                'order:id,custom_order_code',
                 'items.originalProduct:id,name',
                 'items.newProduct:id,name',
             ]);
@@ -677,7 +677,7 @@ class AdminExchangeController extends Controller
             $exportData = $exchanges->map(function ($exchange) {
                 return [
                     'exchange_code' => $exchange->exchange_code,
-                    'order_number' => $exchange->order->order_number ?? '',
+                    'order_number' => $exchange->order->custom_order_code ?? '',
                     'customer_name' => $exchange->user->name ?? '',
                     'customer_email' => $exchange->user->email ?? '',
                     'status' => $exchange->status,

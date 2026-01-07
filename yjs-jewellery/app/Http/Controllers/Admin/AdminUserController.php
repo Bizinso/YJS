@@ -479,7 +479,7 @@ class AdminUserController extends Controller
             $query->where('department_id', $request->department_id);
         }
         if ($request->search) {
-            $query->where('name', 'like', "%{$request->search}%");
+            $query->where('first_name', 'like', "%{$request->search}%");
         }
 
         $roles = $query->orderBy('name')->get();
@@ -623,7 +623,7 @@ class AdminUserController extends Controller
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
+                $q->where('first_name', 'like', "%{$request->search}%")
                     ->orWhere('slug', 'like', "%{$request->search}%");
             });
         }

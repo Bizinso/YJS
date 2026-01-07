@@ -31,7 +31,7 @@ class ExchangeController extends Controller
 
             $exchanges = ExchangeRequest::forUser($user->id)
                 ->with([
-                    'order:id,order_number,total_amount',
+                    'order:id,custom_order_code,total_amount',
                     'items.originalProduct:id,name,main_image',
                     'items.newProduct:id,name,main_image',
                 ])
@@ -336,7 +336,7 @@ class ExchangeController extends Controller
 
             $exchangeRequest = ExchangeRequest::forUser($user->id)
                 ->with([
-                    'order:id,order_number,total_amount,status',
+                    'order:id,custom_order_code,total_amount,status',
                     'items.originalProduct:id,name,main_image,sku',
                     'items.newProduct:id,name,main_image,sku,final_price',
                     'items.orderItem',

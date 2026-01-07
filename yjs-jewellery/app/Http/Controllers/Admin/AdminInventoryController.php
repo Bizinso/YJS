@@ -29,7 +29,7 @@ class AdminInventoryController extends Controller
     {
         $query = Product::select([
             'id', 'name', 'sku', 'main_image',
-            'available_stock', 'reserved_stock',
+            'available_stock', 'initial_stock',
             'base_price', 'category_id', 'status'
         ])->with('category:id,name');
 
@@ -99,7 +99,7 @@ class AdminInventoryController extends Controller
 
         $lowStockProducts = Product::select([
             'id', 'name', 'sku', 'main_image',
-            'available_stock', 'reserved_stock',
+            'available_stock', 'initial_stock',
             'category_id', 'status'
         ])
             ->with('category:id,name')
@@ -125,7 +125,7 @@ class AdminInventoryController extends Controller
     {
         $outOfStockProducts = Product::select([
             'id', 'name', 'sku', 'main_image',
-            'reserved_stock', 'category_id', 'status'
+            'initial_stock', 'available_stock', 'category_id', 'status'
         ])
             ->with('category:id,name')
             ->where('available_stock', 0)

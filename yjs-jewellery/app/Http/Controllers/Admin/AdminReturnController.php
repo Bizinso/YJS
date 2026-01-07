@@ -56,7 +56,7 @@ class AdminReturnController extends Controller
 
             // Recent returns needing attention
             $needsAction = ReturnRequest::needsAction()
-                ->with(['user:id,name,email', 'order:id,order_number'])
+                ->with(['user:id,first_name,last_name,email', 'order:id,custom_order_code'])
                 ->orderBy('created_at', 'asc')
                 ->limit(10)
                 ->get();
@@ -84,8 +84,8 @@ class AdminReturnController extends Controller
     {
         try {
             $query = ReturnRequest::with([
-                'user:id,name,email',
-                'order:id,order_number,total_amount',
+                'user:id,first_name,last_name,email',
+                'order:id,custom_order_code,total_amount',
                 'items:id,return_request_id,product_id,quantity',
             ]);
 
@@ -123,11 +123,11 @@ class AdminReturnController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('return_code', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($uq) use ($search) {
-                            $uq->where('name', 'like', "%{$search}%")
+                            $uq->where('first_name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
                         })
                         ->orWhereHas('order', function ($oq) use ($search) {
-                            $oq->where('order_number', 'like', "%{$search}%");
+                            $oq->where('custom_order_code', 'like', "%{$search}%");
                         });
                 });
             }
@@ -159,8 +159,8 @@ class AdminReturnController extends Controller
     {
         try {
             $returnRequest = ReturnRequest::with([
-                'user:id,name,email,phone',
-                'order:id,order_number,total_amount,status,created_at',
+                'user:id,first_name,last_name,email,phone',
+                'order:id,custom_order_code,total_amount,status,created_at',
                 'order.orderProducts.product:id,name,sku,main_image',
                 'items.product:id,name,sku,main_image',
                 'items.orderItem',
@@ -760,8 +760,8 @@ class AdminReturnController extends Controller
     {
         try {
             $query = ReturnRequest::with([
-                'user:id,name,email',
-                'order:id,order_number',
+                'user:id,first_name,last_name,email',
+                'order:id,custom_order_code',
                 'items.product:id,name,sku',
             ]);
 
@@ -783,7 +783,7 @@ class AdminReturnController extends Controller
             $exportData = $returns->map(function ($return) {
                 return [
                     'return_code' => $return->return_code,
-                    'order_number' => $return->order->order_number ?? '',
+                    'order_number' => $return->order->custom_order_code ?? '',
                     'customer_name' => $return->user->name ?? '',
                     'customer_email' => $return->user->email ?? '',
                     'status' => $return->status,

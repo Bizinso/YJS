@@ -30,7 +30,7 @@ class AdminSupportController extends Controller
     public function tickets(Request $request): JsonResponse
     {
         $query = SupportTicket::with([
-            'user:id,name,email,phone',
+            'user:id,first_name,last_name,email,phone',
             'order:id,custom_order_code,order_total',
             'assignedTo:id,name',
         ]);
@@ -62,7 +62,7 @@ class AdminSupportController extends Controller
                 $q->where('ticket_number', 'like', "%{$search}%")
                     ->orWhere('subject', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%")
+                        $q->where('first_name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%");
                     });
             });
@@ -109,7 +109,7 @@ class AdminSupportController extends Controller
     public function showTicket(int $id): JsonResponse
     {
         $ticket = SupportTicket::with([
-            'user:id,name,email,phone',
+            'user:id,first_name,last_name,email,phone',
             'order:id,custom_order_code,order_total,order_status',
             'assignedTo:id,name,email',
             'messages.sender:id,name,email',

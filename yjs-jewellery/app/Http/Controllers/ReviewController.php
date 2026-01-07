@@ -19,7 +19,7 @@ class ReviewController extends Controller
         $product = Product::findOrFail($productId);
 
         $query = $product->approvedReviews()
-            ->with(['user:id,name'])
+            ->with(['user:id,first_name,last_name'])
             ->orderBy('created_at', 'desc');
 
         // Filter by rating
@@ -58,7 +58,7 @@ class ReviewController extends Controller
         $user = Auth::user();
 
         $query = Review::where('user_id', $user->id)
-            ->with(['product:id,name,slug,main_image', 'order:id,order_number'])
+            ->with(['product:id,name,slug,main_image', 'order:id,custom_order_code'])
             ->orderBy('created_at', 'desc');
 
         // Filter by status
@@ -289,7 +289,7 @@ class ReviewController extends Controller
                 if (!$reviewed && $item->product) {
                     $pendingReviews[] = [
                         'order_id' => $order->id,
-                        'order_number' => $order->order_number,
+                        'order_number' => $order->custom_order_code,
                         'order_date' => $order->created_at,
                         'product_id' => $item->product_id,
                         'product' => $item->product,
@@ -314,7 +314,7 @@ class ReviewController extends Controller
 
         $review = Review::where('id', $id)
             ->where('user_id', $user->id)
-            ->with(['product:id,name,slug,main_image', 'order:id,order_number'])
+            ->with(['product:id,name,slug,main_image', 'order:id,custom_order_code'])
             ->first();
 
         if (!$review) {

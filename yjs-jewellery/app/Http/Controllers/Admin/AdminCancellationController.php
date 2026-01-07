@@ -57,7 +57,7 @@ class AdminCancellationController extends Controller
                     CancellationRequest::STATUS_PENDING,
                     CancellationRequest::STATUS_UNDER_REVIEW,
                 ])
-                ->with(['user:id,name,email', 'order:id,order_number'])
+                ->with(['user:id,first_name,last_name,email', 'order:id,custom_order_code'])
                 ->orderBy('created_at', 'asc')
                 ->limit(10)
                 ->get();
@@ -85,8 +85,8 @@ class AdminCancellationController extends Controller
     {
         try {
             $query = CancellationRequest::with([
-                'user:id,name,email',
-                'order:id,order_number,total_amount,status',
+                'user:id,first_name,last_name,email',
+                'order:id,custom_order_code,total_amount,status',
             ]);
 
             // Filters
@@ -127,11 +127,11 @@ class AdminCancellationController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('cancellation_code', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($uq) use ($search) {
-                            $uq->where('name', 'like', "%{$search}%")
+                            $uq->where('first_name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
                         })
                         ->orWhereHas('order', function ($oq) use ($search) {
-                            $oq->where('order_number', 'like', "%{$search}%");
+                            $oq->where('custom_order_code', 'like', "%{$search}%");
                         });
                 });
             }
@@ -163,8 +163,8 @@ class AdminCancellationController extends Controller
     {
         try {
             $cancellationRequest = CancellationRequest::with([
-                'user:id,name,email,phone',
-                'order:id,order_number,total_amount,status,created_at',
+                'user:id,first_name,last_name,email,phone',
+                'order:id,custom_order_code,total_amount,status,created_at',
                 'order.orderProducts.product:id,name,sku,main_image',
                 'items.product:id,name,sku,main_image',
                 'items.orderItem',
@@ -558,8 +558,8 @@ class AdminCancellationController extends Controller
     {
         try {
             $query = CancellationRequest::with([
-                'user:id,name,email',
-                'order:id,order_number',
+                'user:id,first_name,last_name,email',
+                'order:id,custom_order_code',
             ]);
 
             if ($request->status) {
@@ -579,7 +579,7 @@ class AdminCancellationController extends Controller
             $exportData = $cancellations->map(function ($cancellation) {
                 return [
                     'cancellation_code' => $cancellation->cancellation_code,
-                    'order_number' => $cancellation->order->order_number ?? '',
+                    'order_number' => $cancellation->order->custom_order_code ?? '',
                     'customer_name' => $cancellation->user->name ?? '',
                     'customer_email' => $cancellation->user->email ?? '',
                     'status' => $cancellation->status,
