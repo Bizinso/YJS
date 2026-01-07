@@ -95,9 +95,24 @@ import Promotions from '../views/frontend/Promotions.vue'
 import LoyaltyDashboard from '../views/frontend/LoyaltyDashboard.vue'
 import ReferralDashboard from '../views/frontend/ReferralDashboard.vue'
 import CustomerReturns from '../views/frontend/CustomerReturns.vue'
+import CustomerDashboard from '../views/frontend/CustomerDashboard.vue'
+import CustomerOrders from '../views/frontend/CustomerOrders.vue'
+import CustomerOrderDetails from '../views/frontend/CustomerOrderDetails.vue'
+import CustomerProfile from '../views/frontend/CustomerProfile.vue'
+import CustomerAddresses from '../views/frontend/CustomerAddresses.vue'
+import CustomerWishlist from '../views/frontend/CustomerWishlist.vue'
+import CustomerNotifications from '../views/frontend/CustomerNotifications.vue'
+
+// Customer Auth
+import CustomerLogin from '../views/frontend/auth/CustomerLogin.vue'
+import CustomerRegister from '../views/frontend/auth/CustomerRegister.vue'
+import ForgotPassword from '../views/frontend/auth/ForgotPassword.vue'
 
 // Partner Views
 import PartnerInquiries from '../views/partner/PartnerInquiries.vue'
+import PartnerDashboard from '../views/partner/PartnerDashboard.vue'
+import PartnerLogin from '../views/partner/PartnerLogin.vue'
+import PartnerProfile from '../views/partner/PartnerProfile.vue'
 
 // New Admin Views
 import WarehouseManagement from '../views/admin/warehouse/WarehouseManagement.vue'
@@ -137,14 +152,31 @@ const routes = [
   { path: '/referrals', name: 'referrals', component: ReferralDashboard, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "Referral Program" } },
   { path: '/my-returns', name: 'customerReturns', component: CustomerReturns, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "My Returns" } },
 
+  // Customer Auth
+  { path: '/login', name: 'customerLogin', component: CustomerLogin, meta: { requiresAuth: false, layout: 'full', title: "Login" } },
+  { path: '/register', name: 'customerRegister', component: CustomerRegister, meta: { requiresAuth: false, layout: 'full', title: "Register" } },
+  { path: '/forgot-password', name: 'forgotPassword', component: ForgotPassword, meta: { requiresAuth: false, layout: 'full', title: "Forgot Password" } },
+
+  // Customer Account
+  { path: '/dashboard', name: 'customerDashboard', component: CustomerDashboard, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "My Dashboard" } },
+  { path: '/orders', name: 'customerOrders', component: CustomerOrders, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "My Orders" } },
+  { path: '/orders/:id', name: 'customerOrderDetails', component: CustomerOrderDetails, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "Order Details" } },
+  { path: '/profile', name: 'customerProfile', component: CustomerProfile, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "My Profile" } },
+  { path: '/addresses', name: 'customerAddresses', component: CustomerAddresses, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "My Addresses" } },
+  { path: '/wishlist', name: 'customerWishlist', component: CustomerWishlist, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "My Wishlist" } },
+  { path: '/notifications', name: 'customerNotifications', component: CustomerNotifications, meta: { requiresAuth: true, authType: 'customer', layout: 'full', title: "Notifications" } },
+
   // -------------------------
   // Partner
   // -------------------------
-  { path: '/partner/products', name: 'partnerProducts', component: ProductPartnerListing, meta: { requiresAuth: false, layout: 'full', title: "Partner Product Listing" } },
-  { path: '/partner/:categoryname', name: 'productsSelected', component: ProductsSelectedIndex, meta: { requiresAuth: false, layout: 'full', title: "Selected Products" } },
-  { path: '/partner/product/:id', name: 'partnerproductsDetails', component: ProductsDetails, meta: { requiresAuth: false, layout: 'full', title: "Product Details" } },
+  { path: '/partner/login', name: 'partnerLogin', component: PartnerLogin, meta: { requiresAuth: false, layout: 'full', title: "Partner Login" } },
   { path: '/partner/register', name: 'RegisterPartner', component: RegisterPartner, meta: { requiresAuth: false, layout: 'full', title: "Register Partner" } },
+  { path: '/partner/dashboard', name: 'partnerDashboard', component: PartnerDashboard, meta: { requiresAuth: true, authType: 'partner', layout: 'full', title: "Partner Dashboard" } },
+  { path: '/partner/profile', name: 'partnerProfile', component: PartnerProfile, meta: { requiresAuth: true, authType: 'partner', layout: 'full', title: "Business Profile" } },
   { path: '/partner/inquiries', name: 'partnerInquiries', component: PartnerInquiries, meta: { requiresAuth: true, authType: 'partner', layout: 'full', title: "My Inquiries" } },
+  { path: '/partner/products', name: 'partnerProducts', component: ProductPartnerListing, meta: { requiresAuth: false, layout: 'full', title: "Partner Product Listing" } },
+  { path: '/partner/selected', name: 'productsSelected', component: ProductsSelectedIndex, meta: { requiresAuth: false, layout: 'full', title: "Selected Products" } },
+  { path: '/partner/product/:id', name: 'partnerproductsDetails', component: ProductsDetails, meta: { requiresAuth: false, layout: 'full', title: "Product Details" } },
 
   // -------------------------
   // ADMIN AUTH ROUTES
@@ -277,21 +309,32 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const adminToken = localStorage.getItem('employee_token')
-  const customerToken = localStorage.getItem('customer_token')
+  const customerToken = localStorage.getItem('customer_token') || localStorage.getItem('token')
+  const partnerToken = localStorage.getItem('partner_token')
 
   // 🔐 Route requires authentication
   if (to.meta.requiresAuth) {
 
-    // CUSTOMER ROUTES (Cart, Checkout, Orders)
+    // CUSTOMER ROUTES (Cart, Checkout, Orders, Dashboard, etc.)
     if (to.meta.authType === 'customer') {
-
       if (!customerToken) {
         return next({
-          name: 'home', // or customer login page
+          name: 'customerLogin',
           query: { redirect: to.fullPath }
         })
       }
-    } else {
+    }
+    // PARTNER ROUTES (Dashboard, Inquiries, Profile)
+    else if (to.meta.authType === 'partner') {
+      if (!partnerToken) {
+        return next({
+          name: 'partnerLogin',
+          query: { redirect: to.fullPath }
+        })
+      }
+    }
+    // ADMIN ROUTES
+    else {
       if (!adminToken) {
         return next({ name: 'adminLogin' })
       }
@@ -304,6 +347,19 @@ router.beforeEach((to, from, next) => {
     adminToken
   ) {
     return next({ name: 'admin.dashboard' })
+  }
+
+  // Prevent logged-in customer from visiting customer auth pages
+  if (
+    ['customerLogin', 'customerRegister', 'forgotPassword'].includes(to.name) &&
+    customerToken
+  ) {
+    return next({ name: 'customerDashboard' })
+  }
+
+  // Prevent logged-in partner from visiting partner login page
+  if (to.name === 'partnerLogin' && partnerToken) {
+    return next({ name: 'partnerDashboard' })
   }
 
   next()
