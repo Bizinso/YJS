@@ -31,7 +31,7 @@
       </button>
 
       <div v-if="billingAddress">
-        <b-form>
+        <b-form @submit.prevent="submitNewAddress">
   <b-row>
 
     <!-- Type of Address -->
@@ -42,6 +42,8 @@
         label="Type Of Address"
       >
         <v-select
+          v-model="newAddress.address_type"
+          :options="addressTypeOptions"
           placeholder="Select Address Type"
           class="multiDrop"
         />
@@ -55,6 +57,8 @@
         label="Salutation"
       >
         <v-select
+          v-model="newAddress.salutation"
+          :options="salutationOptions"
           placeholder="Select Salutation"
           class="multiDrop"
         />
@@ -69,8 +73,10 @@
         label-class="required"
       >
         <b-form-input
+          v-model="newAddress.first_name"
           type="text"
           placeholder="Enter First Name"
+          required
         />
       </b-form-group>
     </b-col>
@@ -83,8 +89,10 @@
         label-class="required"
       >
         <b-form-input
+          v-model="newAddress.last_name"
           type="text"
           placeholder="Enter Last Name"
+          required
         />
       </b-form-group>
     </b-col>
@@ -97,8 +105,10 @@
         label-class="required"
       >
         <b-form-input
+          v-model="newAddress.email"
           type="email"
           placeholder="Enter Email"
+          required
         />
       </b-form-group>
     </b-col>
@@ -111,9 +121,11 @@
         label-class="required"
       >
         <b-form-input
+          v-model="newAddress.phone"
           type="tel"
           maxlength="10"
           placeholder="Enter Phone Number"
+          required
         />
       </b-form-group>
     </b-col>
@@ -126,8 +138,10 @@
         label-class="required"
       >
         <b-form-input
+          v-model="newAddress.billing_address_line1"
           type="text"
           placeholder="Enter Address Line 1"
+          required
         />
       </b-form-group>
     </b-col>
@@ -139,6 +153,7 @@
         label="Address Line 2"
       >
         <b-form-input
+          v-model="newAddress.billing_address_line2"
           type="text"
           placeholder="Enter Address Line 2"
         />
@@ -152,6 +167,7 @@
         label="Landmark"
       >
         <b-form-input
+          v-model="newAddress.billing_landmark"
           type="text"
           placeholder="Enter Landmark"
         />
@@ -166,9 +182,11 @@
         label-class="required"
       >
         <b-form-input
+          v-model="newAddress.billing_postal_code"
           type="text"
           maxlength="6"
           placeholder="Enter Pincode"
+          required
         />
       </b-form-group>
     </b-col>
@@ -181,6 +199,8 @@
         label-class="required"
       >
         <v-select
+          v-model="newAddress.country"
+          :options="countryOptions"
           placeholder="Select Country"
           class="multiDrop"
         />
@@ -192,8 +212,11 @@
       <b-form-group
         class="formElements multiDrop"
         label="State"
+        label-class="required"
       >
         <v-select
+          v-model="newAddress.state"
+          :options="stateOptions"
           placeholder="Select State"
           class="multiDrop"
         />
@@ -205,8 +228,11 @@
       <b-form-group
         class="formElements multiDrop"
         label="City"
+        label-class="required"
       >
         <v-select
+          v-model="newAddress.city"
+          :options="cityOptions"
           placeholder="Select City"
           class="multiDrop"
         />
@@ -215,8 +241,11 @@
 
     <!-- Submit Button -->
     <b-col md="12" class="mt-3">
-      <b-button type="submit" variant="primary">
-        Submit Address
+      <b-button type="submit" variant="primary" :disabled="savingAddress">
+        {{ savingAddress ? 'Saving...' : 'Submit Address' }}
+      </b-button>
+      <b-button type="button" variant="outline-secondary" class="ms-2" @click="billingAddress = false">
+        Cancel
       </b-button>
     </b-col>
 
@@ -340,6 +369,38 @@ const paymentErrorMessage = ref("");
 const isPaymentSuccessProcessing = ref(false);
 const cartItems = ref([]);
 const billingAddress= ref(false)
+const savingAddress = ref(false)
+
+// New address form data
+const newAddress = ref({
+  address_type: null,
+  salutation: null,
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+  billing_address_line1: '',
+  billing_address_line2: '',
+  billing_landmark: '',
+  billing_postal_code: '',
+  country: 'India',
+  state: null,
+  city: null
+})
+
+// Dropdown options
+const addressTypeOptions = ['Home', 'Office', 'Other']
+const salutationOptions = ['Mr.', 'Mrs.', 'Ms.', 'Dr.']
+const countryOptions = ['India']
+const stateOptions = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Delhi', 'Jammu & Kashmir', 'Ladakh'
+]
+const cityOptions = ref([])
 const cartSummaryData = ref({
   cart_total_discount: 0,
   total_charges: 0,
@@ -395,6 +456,63 @@ const resetPaymentState = () => {
   isPaymentSuccessProcessing.value = false;
   isLoading.value = false;
   isOrderPlaced.value = false;
+};
+
+// Submit new address
+const submitNewAddress = async () => {
+  // Validate required fields
+  if (!newAddress.value.first_name || !newAddress.value.last_name) {
+    toast.error("Please enter first and last name");
+    return;
+  }
+  if (!newAddress.value.phone || newAddress.value.phone.length !== 10) {
+    toast.error("Please enter a valid 10-digit phone number");
+    return;
+  }
+  if (!newAddress.value.billing_address_line1) {
+    toast.error("Please enter address line 1");
+    return;
+  }
+  if (!newAddress.value.billing_postal_code || newAddress.value.billing_postal_code.length !== 6) {
+    toast.error("Please enter a valid 6-digit pincode");
+    return;
+  }
+  if (!newAddress.value.state || !newAddress.value.city) {
+    toast.error("Please select state and city");
+    return;
+  }
+
+  savingAddress.value = true;
+  try {
+    const response = await axios.post("/addAddress", newAddress.value);
+    toast.success("Address added successfully!");
+    billingAddress.value = false;
+
+    // Reset form
+    newAddress.value = {
+      address_type: null,
+      salutation: null,
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      billing_address_line1: '',
+      billing_address_line2: '',
+      billing_landmark: '',
+      billing_postal_code: '',
+      country: 'India',
+      state: null,
+      city: null
+    };
+
+    // Refresh addresses
+    await fetchAddresses();
+  } catch (err) {
+    console.error("Failed to save address:", err);
+    toast.error(err.response?.data?.message || "Failed to save address");
+  } finally {
+    savingAddress.value = false;
+  }
 };
 
 const calculateMetalGemstonePrice = (item) => {
