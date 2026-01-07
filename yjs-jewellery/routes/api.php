@@ -167,7 +167,7 @@ Route::prefix('customer')->group(function () {
     Route::post('/reset-password', [CustomerPasswordController::class, 'resetPassword'])->middleware('throttle:5,1');
     Route::post('/login-password', [CustomerPasswordController::class, 'loginWithPassword'])->middleware('throttle:5,1');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'customer'])->group(function () {
         Route::post('/logout', [AuthController::class, 'customerlogout']);
 
         // Cart routes
@@ -344,20 +344,24 @@ Route::prefix('partner')->group(function () {
     Route::post('/reset-password', [PartnerPasswordController::class, 'resetPassword'])->middleware('throttle:5,1');
     Route::post('/login-password', [PartnerPasswordController::class, 'loginWithPassword'])->middleware('throttle:5,1');
 
+    // Routes accessible to all authenticated partners (even pending approval)
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'partnerlogout']);
+        Route::get('/profile/approval-status', [PartnerProfileController::class, 'getApprovalStatus']);
 
-        // Profile routes
+        // Password routes (accessible while pending)
+        Route::get('/password/has-password', [PartnerPasswordController::class, 'hasPassword']);
+        Route::post('/password/set', [PartnerPasswordController::class, 'setPassword']);
+        Route::post('/password/change', [PartnerPasswordController::class, 'changePassword']);
+    });
+
+    // Routes requiring approved partner status
+    Route::middleware(['auth:sanctum', 'partner'])->group(function () {
+        // Profile routes (full access for approved partners)
         Route::get('/profile', [PartnerProfileController::class, 'getProfile']);
         Route::put('/profile', [PartnerProfileController::class, 'updateProfile']);
         Route::post('/profile/avatar', [PartnerProfileController::class, 'uploadAvatar']);
         Route::delete('/profile/avatar', [PartnerProfileController::class, 'removeAvatar']);
-        Route::get('/profile/approval-status', [PartnerProfileController::class, 'getApprovalStatus']);
-
-        // Password routes
-        Route::get('/password/has-password', [PartnerPasswordController::class, 'hasPassword']);
-        Route::post('/password/set', [PartnerPasswordController::class, 'setPassword']);
-        Route::post('/password/change', [PartnerPasswordController::class, 'changePassword']);
 
         // Product routes
         Route::get('/products', [ProductController::class, 'partnerproductListing']);
@@ -425,7 +429,7 @@ Route::prefix('webhooks')->group(function () {
 | Employee Shipping Management Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:employee'])->prefix('employee/orders/{order}')->group(function () {
+Route::middleware(['auth:sanctum', 'admin'])->prefix('employee/orders/{order}')->group(function () {
     Route::post('/ship', [App\Http\Controllers\ShippingController::class, 'pushToShiprocket']);
     Route::post('/generate-awb', [App\Http\Controllers\ShippingController::class, 'generateAWB']);
     Route::post('/schedule-pickup', [App\Http\Controllers\ShippingController::class, 'schedulePickup']);
