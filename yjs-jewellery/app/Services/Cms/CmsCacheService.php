@@ -23,10 +23,38 @@ class CmsCacheService
     protected const GLOBAL_SECTION_CACHE_TTL = 86400; // 24 hours
     protected const DATA_BINDING_DEFAULT_TTL = 300; // 5 minutes default
 
+    protected ?bool $tagsSupported = null;
+
     public function __construct(
         protected RenderService $renderService,
         protected DataBindingService $dataBindingService
     ) {}
+
+    /**
+     * Remember with tags if supported, otherwise use simple cache.
+     */
+    protected function rememberWithTags(array $tags, string $key, int $ttl, callable $callback): mixed
+    {
+        if ($this->supportsTagging()) {
+            return Cache::tags($tags)->remember($key, $ttl, $callback);
+        }
+
+        return Cache::remember($key, $ttl, $callback);
+    }
+
+    /**
+     * Flush tags if supported, otherwise forget specific keys.
+     */
+    protected function flushTags(array $tags, array $keys = []): void
+    {
+        if ($this->supportsTagging()) {
+            Cache::tags($tags)->flush();
+        } elseif (!empty($keys)) {
+            foreach ($keys as $key) {
+                Cache::forget($key);
+            }
+        }
+    }
 
     /**
      * Get published page with caching.
@@ -35,8 +63,11 @@ class CmsCacheService
     {
         $cacheKey = "cms:page:published:{$slug}";
 
-        return Cache::tags(['cms', 'cms:pages', "cms:page:{$slug}"])
-            ->remember($cacheKey, self::PAGE_CACHE_TTL, function () use ($slug) {
+        return $this->rememberWithTags(
+            ['cms', 'cms:pages', "cms:page:{$slug}"],
+            $cacheKey,
+            self::PAGE_CACHE_TTL,
+            function () use ($slug) {
                 $page = Page::where('slug', $slug)
                     ->whereNotNull('published_version_id')
                     ->with('publishedVersion')
@@ -47,7 +78,8 @@ class CmsCacheService
                 }
 
                 return $this->buildPageResponse($page, $page->publishedVersion);
-            });
+            }
+        );
     }
 
     /**
@@ -57,8 +89,11 @@ class CmsCacheService
     {
         $cacheKey = "cms:page:published:id:{$pageId}";
 
-        return Cache::tags(['cms', 'cms:pages', "cms:page:id:{$pageId}"])
-            ->remember($cacheKey, self::PAGE_CACHE_TTL, function () use ($pageId) {
+        return $this->rememberWithTags(
+            ['cms', 'cms:pages', "cms:page:id:{$pageId}"],
+            $cacheKey,
+            self::PAGE_CACHE_TTL,
+            function () use ($pageId) {
                 $page = Page::where('id', $pageId)
                     ->whereNotNull('published_version_id')
                     ->with('publishedVersion')
@@ -69,7 +104,8 @@ class CmsCacheService
                 }
 
                 return $this->buildPageResponse($page, $page->publishedVersion);
-            });
+            }
+        );
     }
 
     /**
@@ -79,14 +115,14 @@ class CmsCacheService
     {
         $cacheKey = 'cms:page:homepage';
 
-        return Cache::tags(['cms', 'cms:pages', 'cms:homepage'])
-            ->remember($cacheKey, self::PAGE_CACHE_TTL, function () {
-                // Look for page with slug 'home' or 'homepage', or first page with is_homepage flag
+        return $this->rememberWithTags(
+            ['cms', 'cms:pages', 'cms:homepage'],
+            $cacheKey,
+            self::PAGE_CACHE_TTL,
+            function () {
+                // Look for page with slug 'home' or 'homepage'
                 $page = Page::whereNotNull('published_version_id')
-                    ->where(function ($q) {
-                        $q->whereIn('slug', ['home', 'homepage', '/'])
-                            ->orWhereRaw("JSON_EXTRACT(COALESCE((SELECT layout_settings FROM page_versions_kernel WHERE id = pages.published_version_id), '{}'), '$.is_homepage') = true");
-                    })
+                    ->whereIn('slug', ['home', 'homepage', '/'])
                     ->with('publishedVersion')
                     ->first();
 
@@ -102,7 +138,8 @@ class CmsCacheService
                 }
 
                 return $this->buildPageResponse($page, $page->publishedVersion);
-            });
+            }
+        );
     }
 
     /**
@@ -116,8 +153,11 @@ class CmsCacheService
 
         $cacheKey = "cms:global:{$type}";
 
-        return Cache::tags(['cms', 'cms:global', "cms:global:{$type}"])
-            ->remember($cacheKey, self::GLOBAL_SECTION_CACHE_TTL, function () use ($type) {
+        return $this->rememberWithTags(
+            ['cms', 'cms:global', "cms:global:{$type}"],
+            $cacheKey,
+            self::GLOBAL_SECTION_CACHE_TTL,
+            function () use ($type) {
                 $section = GlobalSection::where('type', $type)
                     ->where('is_default', true)
                     ->where('is_active', true)
@@ -137,7 +177,8 @@ class CmsCacheService
                     'settings' => $section->publishedVersion->settings ?? [],
                     'version' => $section->publishedVersion->version_number,
                 ];
-            });
+            }
+        );
     }
 
     /**
@@ -149,8 +190,11 @@ class CmsCacheService
         $configHash = md5(json_encode($config));
         $cacheKey = "cms:binding:{$providerId}:{$configHash}";
 
-        return Cache::tags(['cms', 'cms:bindings', "cms:binding:{$providerId}"])
-            ->remember($cacheKey, $ttl, function () use ($providerId, $config) {
+        return $this->rememberWithTags(
+            ['cms', 'cms:bindings', "cms:binding:{$providerId}"],
+            $cacheKey,
+            $ttl,
+            function () use ($providerId, $config) {
                 try {
                     $result = $this->dataBindingService->fetchBinding([
                         'provider' => $providerId,
@@ -166,7 +210,8 @@ class CmsCacheService
                     ]);
                     return null;
                 }
-            });
+            }
+        );
     }
 
     /**
@@ -209,14 +254,18 @@ class CmsCacheService
      */
     public function invalidatePageCache(Page $page): void
     {
-        // Invalidate specific page caches
-        Cache::tags(["cms:page:{$page->slug}"])->flush();
-        Cache::tags(["cms:page:id:{$page->id}"])->flush();
+        $keys = [
+            "cms:page:published:{$page->slug}",
+            "cms:page:published:id:{$page->id}",
+        ];
 
         // If this might be homepage, also invalidate homepage cache
         if (in_array($page->slug, ['home', 'homepage', '/'])) {
-            Cache::tags(['cms:homepage'])->flush();
+            $keys[] = 'cms:page:homepage';
         }
+
+        $this->flushTags(["cms:page:{$page->slug}"], $keys);
+        $this->flushTags(["cms:page:id:{$page->id}"], []);
 
         Log::info("CMS page cache invalidated", ['page_id' => $page->id, 'slug' => $page->slug]);
     }
@@ -226,7 +275,10 @@ class CmsCacheService
      */
     public function invalidateGlobalSectionCache(GlobalSection $section): void
     {
-        Cache::tags(["cms:global:{$section->type}"])->flush();
+        $this->flushTags(
+            ["cms:global:{$section->type}"],
+            ["cms:global:{$section->type}"]
+        );
 
         Log::info("CMS global section cache invalidated", [
             'section_id' => $section->id,
@@ -239,7 +291,7 @@ class CmsCacheService
      */
     public function invalidateBindingCache(string $providerId): void
     {
-        Cache::tags(["cms:binding:{$providerId}"])->flush();
+        $this->flushTags(["cms:binding:{$providerId}"], []);
 
         Log::info("CMS binding cache invalidated", ['provider' => $providerId]);
     }
@@ -249,7 +301,13 @@ class CmsCacheService
      */
     public function invalidateAll(): void
     {
-        Cache::tags(['cms'])->flush();
+        if ($this->supportsTagging()) {
+            Cache::tags(['cms'])->flush();
+        } else {
+            // Without tag support, we can't easily flush all CMS caches
+            // Clear common keys
+            Cache::forget('cms:page:homepage');
+        }
 
         Log::info("All CMS caches invalidated");
     }
@@ -305,12 +363,19 @@ class CmsCacheService
      */
     protected function supportsTagging(): bool
     {
-        try {
-            Cache::tags(['test'])->get('test');
-            return true;
-        } catch (\Exception $e) {
-            return false;
+        if ($this->tagsSupported !== null) {
+            return $this->tagsSupported;
         }
+
+        try {
+            Cache::tags(['cms_test'])->put('cms_test_key', true, 1);
+            Cache::tags(['cms_test'])->forget('cms_test_key');
+            $this->tagsSupported = true;
+        } catch (\Exception $e) {
+            $this->tagsSupported = false;
+        }
+
+        return $this->tagsSupported;
     }
 
     /**
