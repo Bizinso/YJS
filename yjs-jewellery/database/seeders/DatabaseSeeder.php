@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             TaxZoneSeeder::class,
             WarehouseSeeder::class,
             SupportCategorySeeder::class,
+            WidgetSeeder::class,
         ]);
 
     }
