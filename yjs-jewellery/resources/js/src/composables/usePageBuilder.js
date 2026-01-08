@@ -1,54 +1,91 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, readonly } from 'vue'
 import axiosAdmin from '@/plugins/axiosAdmin'
+import { useVersioning } from './useVersioning'
+import { useDataBinding } from './useDataBinding'
+import { useAutoSave } from './useAutoSave'
 
-// Shared state (singleton pattern)
+// Shared state (singleton pattern for page builder)
 const page = ref(null)
-const blocks = ref([])
-const selectedBlockId = ref(null)
+const widgets = ref([])
+const selectedWidgetId = ref(null)
 const isDirty = ref(false)
 const isSaving = ref(false)
 const isLoading = ref(false)
-const previewMode = ref('desktop') // desktop, tablet, mobile
+const previewMode = ref('desktop')
 const showSeoPanel = ref(false)
+const showVersionPanel = ref(false)
 const undoStack = ref([])
 const redoStack = ref([])
 
-// Block configuration from backend
-const blockConfig = ref(null)
+// Widget registry from backend
+const widgetRegistry = ref(null)
 
+/**
+ * usePageBuilder - Main composable for the CMS Page Builder
+ *
+ * Integrates with:
+ * - useVersioning: For immutable version management
+ * - useDataBinding: For dynamic data resolution
+ * - useAutoSave: For automatic saving
+ */
 export function usePageBuilder() {
+    // Sub-composables
+    const versioning = useVersioning()
+    const dataBinding = useDataBinding()
+
     // Computed
-    const selectedBlock = computed(() => {
-        if (!selectedBlockId.value) return null
-        return blocks.value.find(b => b.id === selectedBlockId.value)
+    const selectedWidget = computed(() => {
+        if (!selectedWidgetId.value) return null
+        return widgets.value.find(w => w.id === selectedWidgetId.value)
     })
 
-    const selectedBlockIndex = computed(() => {
-        if (!selectedBlockId.value) return -1
-        return blocks.value.findIndex(b => b.id === selectedBlockId.value)
+    const selectedWidgetIndex = computed(() => {
+        if (!selectedWidgetId.value) return -1
+        return widgets.value.findIndex(w => w.id === selectedWidgetId.value)
     })
 
     const canUndo = computed(() => undoStack.value.length > 0)
     const canRedo = computed(() => redoStack.value.length > 0)
 
-    // Watch for changes to mark as dirty
-    watch(blocks, () => {
-        isDirty.value = true
+    const currentVersion = computed(() => versioning.currentVersion)
+    const publishedVersion = computed(() => versioning.publishedVersion)
+    const draftVersion = computed(() => versioning.draftVersion)
+    const versionHistory = computed(() => versioning.versionHistory)
+
+    // Watch for widget changes to mark dirty
+    watch(widgets, () => {
+        if (!isLoading.value) {
+            isDirty.value = true
+            versioning.markDirty()
+        }
     }, { deep: true })
 
     // Methods
+
+    /**
+     * Load a page with its current draft version
+     */
     const loadPage = async (pageId) => {
         isLoading.value = true
         try {
-            const response = await axiosAdmin.get(`/cms/pages/${pageId}`)
-            if (response.data.success) {
-                page.value = response.data.data
-                blocks.value = response.data.data.blocks || []
+            const data = await versioning.loadPage(pageId)
+
+            if (data) {
+                page.value = data
+                widgets.value = data.draft_version?.widgets || data.widgets || []
                 isDirty.value = false
-                selectedBlockId.value = null
+                selectedWidgetId.value = null
                 undoStack.value = []
                 redoStack.value = []
+
+                // Load version history
+                await versioning.loadHistory(pageId)
+
+                // Load data providers for binding
+                await dataBinding.loadProviders()
             }
+
+            return data
         } catch (error) {
             console.error('Error loading page:', error)
             throw error
@@ -57,283 +94,53 @@ export function usePageBuilder() {
         }
     }
 
-    const loadBlockConfig = async () => {
-        if (blockConfig.value) return blockConfig.value
+    /**
+     * Load widget registry from backend
+     */
+    const loadWidgetRegistry = async () => {
+        if (widgetRegistry.value) return widgetRegistry.value
 
         try {
-            // This would typically come from an API endpoint
-            // For now, we'll use a static config
-            blockConfig.value = {
-                categories: {
-                    layout: { label: 'Layout', icon: 'bi-grid', order: 1 },
-                    content: { label: 'Content', icon: 'bi-file-text', order: 2 },
-                    media: { label: 'Media', icon: 'bi-image', order: 3 },
-                    ecommerce: { label: 'E-commerce', icon: 'bi-cart', order: 4 },
-                    conversion: { label: 'Conversion', icon: 'bi-bullseye', order: 5 },
-                    social: { label: 'Social Proof', icon: 'bi-people', order: 6 },
-                    forms: { label: 'Forms', icon: 'bi-envelope', order: 7 },
-                    advanced: { label: 'Advanced', icon: 'bi-code-slash', order: 8 }
-                },
-                blocks: {
-                    hero: {
-                        name: 'Hero Banner',
-                        description: 'Full-width hero with image and CTA',
-                        icon: 'bi-aspect-ratio',
-                        category: 'layout',
-                        defaultData: {
-                            title: 'Welcome to Our Store',
-                            subtitle: 'Discover amazing products',
-                            background_image: '',
-                            overlay_color: 'rgba(0,0,0,0.4)',
-                            text_color: '#ffffff',
-                            cta_text: 'Shop Now',
-                            cta_link: '/products',
-                            alignment: 'center',
-                            height: '500px'
-                        },
-                        defaultSettings: {
-                            full_width: true,
-                            parallax: false
-                        }
-                    },
-                    spacer: {
-                        name: 'Spacer / Divider',
-                        description: 'Add vertical space or divider',
-                        icon: 'bi-distribute-vertical',
-                        category: 'layout',
-                        defaultData: {
-                            height: 40,
-                            show_divider: false,
-                            divider_style: 'solid',
-                            divider_color: '#e0e0e0'
-                        },
-                        defaultSettings: {}
-                    },
-                    rich_text: {
-                        name: 'Rich Text',
-                        description: 'WYSIWYG content block',
-                        icon: 'bi-text-paragraph',
-                        category: 'content',
-                        defaultData: {
-                            content: '<p>Enter your content here...</p>'
-                        },
-                        defaultSettings: {
-                            max_width: '800px',
-                            text_align: 'left'
-                        }
-                    },
-                    faq: {
-                        name: 'FAQ Accordion',
-                        description: 'Expandable FAQ section',
-                        icon: 'bi-question-circle',
-                        category: 'content',
-                        defaultData: {
-                            title: 'Frequently Asked Questions',
-                            items: [
-                                { question: 'Sample question?', answer: 'Sample answer.' }
-                            ]
-                        },
-                        defaultSettings: {
-                            allow_multiple_open: false,
-                            first_open: true
-                        }
-                    },
-                    gallery: {
-                        name: 'Image Gallery',
-                        description: 'Grid or carousel of images',
-                        icon: 'bi-images',
-                        category: 'media',
-                        defaultData: {
-                            title: '',
-                            images: []
-                        },
-                        defaultSettings: {
-                            layout: 'grid',
-                            columns: 3,
-                            gap: 16,
-                            lightbox: true
-                        }
-                    },
-                    video: {
-                        name: 'Video Embed',
-                        description: 'YouTube, Vimeo, or self-hosted',
-                        icon: 'bi-play-circle',
-                        category: 'media',
-                        defaultData: {
-                            title: '',
-                            video_url: '',
-                            video_type: 'youtube',
-                            thumbnail: ''
-                        },
-                        defaultSettings: {
-                            autoplay: false,
-                            loop: false,
-                            controls: true,
-                            aspect_ratio: '16:9'
-                        }
-                    },
-                    product_showcase: {
-                        name: 'Product Showcase',
-                        description: 'Display products from catalog',
-                        icon: 'bi-gem',
-                        category: 'ecommerce',
-                        defaultData: {
-                            title: 'Featured Products',
-                            subtitle: '',
-                            source: 'featured',
-                            category_id: null,
-                            product_ids: [],
-                            limit: 8
-                        },
-                        defaultSettings: {
-                            layout: 'grid',
-                            columns: 4,
-                            show_price: true,
-                            show_rating: true,
-                            show_add_to_cart: true
-                        }
-                    },
-                    category_grid: {
-                        name: 'Category Grid',
-                        description: 'Display product categories',
-                        icon: 'bi-grid-3x3',
-                        category: 'ecommerce',
-                        defaultData: {
-                            title: 'Shop by Category',
-                            subtitle: '',
-                            source: 'all',
-                            category_ids: [],
-                            limit: 6
-                        },
-                        defaultSettings: {
-                            layout: 'grid',
-                            columns: 3,
-                            show_product_count: true
-                        }
-                    },
-                    offer_banner: {
-                        name: 'Offer Banner',
-                        description: 'Promotional banner with countdown',
-                        icon: 'bi-tag',
-                        category: 'ecommerce',
-                        defaultData: {
-                            title: '',
-                            subtitle: '',
-                            offer_id: null,
-                            background_image: '',
-                            background_color: '#f8f9fa',
-                            cta_text: 'Shop Now',
-                            cta_link: ''
-                        },
-                        defaultSettings: {
-                            show_countdown: true,
-                            show_discount: true
-                        }
-                    },
-                    cta: {
-                        name: 'Call to Action',
-                        description: 'Prominent CTA section',
-                        icon: 'bi-megaphone',
-                        category: 'conversion',
-                        defaultData: {
-                            title: '',
-                            description: '',
-                            primary_button_text: '',
-                            primary_button_link: '',
-                            secondary_button_text: '',
-                            secondary_button_link: '',
-                            background_color: '#1a1a2e',
-                            text_color: '#ffffff'
-                        },
-                        defaultSettings: {
-                            layout: 'horizontal',
-                            full_width: true
-                        }
-                    },
-                    testimonials: {
-                        name: 'Testimonials',
-                        description: 'Customer testimonials',
-                        icon: 'bi-chat-quote',
-                        category: 'social',
-                        defaultData: {
-                            title: 'What Our Customers Say',
-                            subtitle: '',
-                            source: 'manual',
-                            testimonials: [],
-                            limit: 6
-                        },
-                        defaultSettings: {
-                            layout: 'carousel',
-                            show_rating: true,
-                            show_avatar: true,
-                            autoplay: true
-                        }
-                    },
-                    contact_form: {
-                        name: 'Contact Form',
-                        description: 'Customizable contact form',
-                        icon: 'bi-envelope',
-                        category: 'forms',
-                        defaultData: {
-                            form_name: 'Contact Form',
-                            title: 'Get in Touch',
-                            subtitle: '',
-                            fields: [
-                                { type: 'text', name: 'name', label: 'Your Name', required: true },
-                                { type: 'email', name: 'email', label: 'Email Address', required: true },
-                                { type: 'textarea', name: 'message', label: 'Message', required: true }
-                            ],
-                            submit_text: 'Send Message'
-                        },
-                        defaultSettings: {
-                            notify_email: '',
-                            success_message: 'Thank you for your message!',
-                            show_labels: true
-                        }
-                    },
-                    custom_html: {
-                        name: 'Custom HTML',
-                        description: 'Raw HTML/CSS/JS code',
-                        icon: 'bi-code-slash',
-                        category: 'advanced',
-                        defaultData: {
-                            html: '',
-                            css: '',
-                            js: ''
-                        },
-                        defaultSettings: {
-                            sandbox: true
-                        }
-                    }
-                }
+            const response = await axiosAdmin.get('/cms/widgets')
+
+            if (response.data.success) {
+                widgetRegistry.value = response.data.data
+                return widgetRegistry.value
             }
-            return blockConfig.value
         } catch (error) {
-            console.error('Error loading block config:', error)
-            throw error
+            console.error('Error loading widget registry:', error)
+            // Fall back to default config
+            widgetRegistry.value = getDefaultWidgetConfig()
         }
+
+        return widgetRegistry.value
     }
 
-    const savePage = async () => {
-        if (!page.value || isSaving.value) return
+    /**
+     * Save page - creates a NEW version (immutable)
+     */
+    const savePage = async (note = null) => {
+        if (!page.value || isSaving.value) return null
 
         isSaving.value = true
         try {
-            const response = await axiosAdmin.put(`/cms/pages/${page.value.id}`, {
+            const changes = {
                 title: page.value.title,
                 slug: page.value.slug,
-                type: page.value.type,
-                blocks: blocks.value,
-                page_settings: page.value.page_settings || {},
+                widgets: widgets.value,
+                layout_settings: page.value.layout_settings || {},
                 seo: page.value.seo || {},
-                status: page.value.status
-            })
-
-            if (response.data.success) {
-                isDirty.value = false
-                page.value = response.data.data
+                data_bindings: extractDataBindings(widgets.value)
             }
-            return response.data
+
+            const result = await versioning.saveVersion(page.value.id, changes, note)
+
+            if (result) {
+                isDirty.value = false
+                page.value = { ...page.value, ...result }
+            }
+
+            return result
         } catch (error) {
             console.error('Error saving page:', error)
             throw error
@@ -342,23 +149,76 @@ export function usePageBuilder() {
         }
     }
 
-    const generateBlockId = () => {
-        return 'block_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    /**
+     * Publish the current draft
+     */
+    const publishPage = async () => {
+        return await versioning.publish()
     }
 
-    const addBlock = (blockType, index = null) => {
-        const config = blockConfig.value?.blocks[blockType]
+    /**
+     * Revert to a previous version
+     */
+    const revertToVersion = async (versionId, reason = null) => {
+        const result = await versioning.revertTo(page.value.id, versionId, reason)
+
+        if (result) {
+            // Reload the page to get new draft
+            await loadPage(page.value.id)
+        }
+
+        return result
+    }
+
+    /**
+     * Schedule version for future publish
+     */
+    const schedulePublish = async (publishAt) => {
+        const versionId = versioning.draftVersion?.id
+        if (versionId) {
+            return await versioning.schedule(versionId, publishAt)
+        }
+    }
+
+    /**
+     * Extract data bindings from widgets
+     */
+    const extractDataBindings = (widgetList) => {
+        const bindings = {}
+
+        widgetList.forEach(widget => {
+            if (widget.data_binding) {
+                bindings[widget.id] = widget.data_binding
+            }
+        })
+
+        return bindings
+    }
+
+    /**
+     * Generate unique widget ID
+     */
+    const generateWidgetId = () => {
+        return 'widget_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    }
+
+    /**
+     * Add a new widget
+     */
+    const addWidget = (widgetType, index = null) => {
+        const config = widgetRegistry.value?.widgets?.[widgetType] ||
+                       widgetRegistry.value?.blocks?.[widgetType]
         if (!config) return null
 
         saveToUndoStack()
 
-        const newBlock = {
-            id: generateBlockId(),
-            type: blockType,
-            order: index !== null ? index : blocks.value.length,
+        const newWidget = {
+            id: generateWidgetId(),
+            type: widgetType,
+            order: index !== null ? index : widgets.value.length,
             visible: true,
-            data: JSON.parse(JSON.stringify(config.defaultData || {})),
-            settings: JSON.parse(JSON.stringify(config.defaultSettings || {})),
+            data: JSON.parse(JSON.stringify(config.defaultData || config.default_data || {})),
+            settings: JSON.parse(JSON.stringify(config.defaultSettings || config.default_settings || {})),
             style: {
                 backgroundColor: '#ffffff',
                 padding: { top: 40, right: 20, bottom: 40, left: 20 },
@@ -370,115 +230,150 @@ export function usePageBuilder() {
                 tablet: { visible: true },
                 mobile: { visible: true }
             },
-            animation: { type: 'none', duration: 500 }
+            animation: { type: 'none', duration: 500 },
+            data_binding: null // For dynamic data
         }
 
         if (index !== null) {
-            blocks.value.splice(index, 0, newBlock)
-            // Update order for all blocks
-            blocks.value.forEach((b, i) => b.order = i)
+            widgets.value.splice(index, 0, newWidget)
+            widgets.value.forEach((w, i) => w.order = i)
         } else {
-            blocks.value.push(newBlock)
+            widgets.value.push(newWidget)
         }
 
-        selectedBlockId.value = newBlock.id
-        return newBlock
+        selectedWidgetId.value = newWidget.id
+        return newWidget
     }
 
-    const updateBlock = (blockId, updates) => {
-        const index = blocks.value.findIndex(b => b.id === blockId)
+    /**
+     * Update widget properties
+     */
+    const updateWidget = (widgetId, updates) => {
+        const index = widgets.value.findIndex(w => w.id === widgetId)
         if (index === -1) return
 
         saveToUndoStack()
 
-        blocks.value[index] = {
-            ...blocks.value[index],
+        widgets.value[index] = {
+            ...widgets.value[index],
             ...updates
         }
     }
 
-    const updateBlockData = (blockId, data) => {
-        const block = blocks.value.find(b => b.id === blockId)
-        if (!block) return
+    /**
+     * Update widget data
+     */
+    const updateWidgetData = (widgetId, data) => {
+        const widget = widgets.value.find(w => w.id === widgetId)
+        if (!widget) return
 
         saveToUndoStack()
-
-        block.data = { ...block.data, ...data }
+        widget.data = { ...widget.data, ...data }
     }
 
-    const updateBlockSettings = (blockId, settings) => {
-        const block = blocks.value.find(b => b.id === blockId)
-        if (!block) return
+    /**
+     * Update widget settings
+     */
+    const updateWidgetSettings = (widgetId, settings) => {
+        const widget = widgets.value.find(w => w.id === widgetId)
+        if (!widget) return
 
         saveToUndoStack()
-
-        block.settings = { ...block.settings, ...settings }
+        widget.settings = { ...widget.settings, ...settings }
     }
 
-    const updateBlockStyle = (blockId, style) => {
-        const block = blocks.value.find(b => b.id === blockId)
-        if (!block) return
+    /**
+     * Update widget style
+     */
+    const updateWidgetStyle = (widgetId, style) => {
+        const widget = widgets.value.find(w => w.id === widgetId)
+        if (!widget) return
 
         saveToUndoStack()
-
-        block.style = { ...block.style, ...style }
+        widget.style = { ...widget.style, ...style }
     }
 
-    const deleteBlock = (blockId) => {
+    /**
+     * Update widget data binding
+     */
+    const updateWidgetBinding = (widgetId, binding) => {
+        const widget = widgets.value.find(w => w.id === widgetId)
+        if (!widget) return
+
+        saveToUndoStack()
+        widget.data_binding = binding
+    }
+
+    /**
+     * Delete a widget
+     */
+    const deleteWidget = (widgetId) => {
         saveToUndoStack()
 
-        const index = blocks.value.findIndex(b => b.id === blockId)
+        const index = widgets.value.findIndex(w => w.id === widgetId)
         if (index > -1) {
-            blocks.value.splice(index, 1)
-            blocks.value.forEach((b, i) => b.order = i)
+            widgets.value.splice(index, 1)
+            widgets.value.forEach((w, i) => w.order = i)
 
-            if (selectedBlockId.value === blockId) {
-                selectedBlockId.value = null
+            if (selectedWidgetId.value === widgetId) {
+                selectedWidgetId.value = null
             }
         }
     }
 
-    const duplicateBlock = (blockId) => {
-        const block = blocks.value.find(b => b.id === blockId)
-        if (!block) return null
+    /**
+     * Duplicate a widget
+     */
+    const duplicateWidget = (widgetId) => {
+        const widget = widgets.value.find(w => w.id === widgetId)
+        if (!widget) return null
 
         saveToUndoStack()
 
-        const newBlock = JSON.parse(JSON.stringify(block))
-        newBlock.id = generateBlockId()
+        const newWidget = JSON.parse(JSON.stringify(widget))
+        newWidget.id = generateWidgetId()
 
-        const index = blocks.value.findIndex(b => b.id === blockId)
-        blocks.value.splice(index + 1, 0, newBlock)
-        blocks.value.forEach((b, i) => b.order = i)
+        const index = widgets.value.findIndex(w => w.id === widgetId)
+        widgets.value.splice(index + 1, 0, newWidget)
+        widgets.value.forEach((w, i) => w.order = i)
 
-        selectedBlockId.value = newBlock.id
-        return newBlock
+        selectedWidgetId.value = newWidget.id
+        return newWidget
     }
 
-    const moveBlock = (fromIndex, toIndex) => {
+    /**
+     * Move a widget
+     */
+    const moveWidget = (fromIndex, toIndex) => {
         if (fromIndex === toIndex) return
 
         saveToUndoStack()
 
-        const [block] = blocks.value.splice(fromIndex, 1)
-        blocks.value.splice(toIndex, 0, block)
-        blocks.value.forEach((b, i) => b.order = i)
+        const [widget] = widgets.value.splice(fromIndex, 1)
+        widgets.value.splice(toIndex, 0, widget)
+        widgets.value.forEach((w, i) => w.order = i)
     }
 
-    const selectBlock = (blockId) => {
-        selectedBlockId.value = blockId
+    /**
+     * Select a widget
+     */
+    const selectWidget = (widgetId) => {
+        selectedWidgetId.value = widgetId
     }
 
-    const deselectBlock = () => {
-        selectedBlockId.value = null
+    /**
+     * Deselect widget
+     */
+    const deselectWidget = () => {
+        selectedWidgetId.value = null
     }
 
     // Undo/Redo
+
     const saveToUndoStack = () => {
-        undoStack.value.push(JSON.stringify(blocks.value))
+        undoStack.value.push(JSON.stringify(widgets.value))
         redoStack.value = []
 
-        // Limit stack size
         if (undoStack.value.length > 50) {
             undoStack.value.shift()
         }
@@ -487,28 +382,38 @@ export function usePageBuilder() {
     const undo = () => {
         if (undoStack.value.length === 0) return
 
-        redoStack.value.push(JSON.stringify(blocks.value))
+        redoStack.value.push(JSON.stringify(widgets.value))
         const previousState = undoStack.value.pop()
-        blocks.value = JSON.parse(previousState)
+        widgets.value = JSON.parse(previousState)
     }
 
     const redo = () => {
         if (redoStack.value.length === 0) return
 
-        undoStack.value.push(JSON.stringify(blocks.value))
+        undoStack.value.push(JSON.stringify(widgets.value))
         const nextState = redoStack.value.pop()
-        blocks.value = JSON.parse(nextState)
+        widgets.value = JSON.parse(nextState)
     }
 
-    // Preview mode
+    // Preview and panels
+
     const setPreviewMode = (mode) => {
         previewMode.value = mode
     }
 
+    const toggleSeoPanel = () => {
+        showSeoPanel.value = !showSeoPanel.value
+    }
+
+    const toggleVersionPanel = () => {
+        showVersionPanel.value = !showVersionPanel.value
+    }
+
     // Page settings
+
     const updatePageSettings = (settings) => {
         if (!page.value) return
-        page.value.page_settings = { ...page.value.page_settings, ...settings }
+        page.value.layout_settings = { ...page.value.layout_settings, ...settings }
         isDirty.value = true
     }
 
@@ -524,54 +429,220 @@ export function usePageBuilder() {
         isDirty.value = true
     }
 
-    // Reset state (for cleanup)
+    // Reset
+
     const resetState = () => {
         page.value = null
-        blocks.value = []
-        selectedBlockId.value = null
+        widgets.value = []
+        selectedWidgetId.value = null
         isDirty.value = false
         isSaving.value = false
         isLoading.value = false
         undoStack.value = []
         redoStack.value = []
+        versioning.reset()
+        dataBinding.reset()
     }
 
     return {
         // State
         page,
-        blocks,
-        selectedBlockId,
-        selectedBlock,
-        selectedBlockIndex,
+        widgets,
+        selectedWidgetId,
+        selectedWidget,
+        selectedWidgetIndex,
         isDirty,
         isSaving,
         isLoading,
         previewMode,
         showSeoPanel,
-        blockConfig,
+        showVersionPanel,
+        widgetRegistry,
         canUndo,
         canRedo,
 
-        // Methods
+        // Version state
+        currentVersion,
+        publishedVersion,
+        draftVersion,
+        versionHistory,
+        isPublishing: versioning.isPublishing,
+        hasUnsavedChanges: versioning.hasUnsavedChanges,
+
+        // Data binding
+        dataProviders: dataBinding.providers,
+        boundData: dataBinding.boundData,
+
+        // Methods - Page
         loadPage,
-        loadBlockConfig,
+        loadWidgetRegistry,
         savePage,
-        addBlock,
-        updateBlock,
-        updateBlockData,
-        updateBlockSettings,
-        updateBlockStyle,
-        deleteBlock,
-        duplicateBlock,
-        moveBlock,
-        selectBlock,
-        deselectBlock,
+        publishPage,
+        revertToVersion,
+        schedulePublish,
+
+        // Methods - Widget
+        addWidget,
+        updateWidget,
+        updateWidgetData,
+        updateWidgetSettings,
+        updateWidgetStyle,
+        updateWidgetBinding,
+        deleteWidget,
+        duplicateWidget,
+        moveWidget,
+        selectWidget,
+        deselectWidget,
+
+        // Methods - History
         undo,
         redo,
+
+        // Methods - UI
         setPreviewMode,
+        toggleSeoPanel,
+        toggleVersionPanel,
+
+        // Methods - Settings
         updatePageSettings,
         updatePageSeo,
         updatePageInfo,
-        resetState
+
+        // Methods - Data Binding
+        loadDataProviders: dataBinding.loadProviders,
+        previewDataBinding: dataBinding.previewBinding,
+        resolveDataBindings: dataBinding.resolveAllBindings,
+
+        // Methods - Version
+        loadVersionHistory: versioning.loadHistory,
+        compareVersions: versioning.compare,
+        scheduleVersion: versioning.schedule,
+
+        // Reset
+        resetState,
+
+        // Sub-composables (for advanced usage)
+        versioning,
+        dataBinding
+    }
+}
+
+/**
+ * Default widget configuration (fallback)
+ */
+function getDefaultWidgetConfig() {
+    return {
+        categories: {
+            layout: { label: 'Layout', icon: 'bi-grid', order: 1 },
+            content: { label: 'Content', icon: 'bi-file-text', order: 2 },
+            media: { label: 'Media', icon: 'bi-image', order: 3 },
+            ecommerce: { label: 'E-commerce', icon: 'bi-cart', order: 4 },
+            conversion: { label: 'Conversion', icon: 'bi-bullseye', order: 5 },
+            social: { label: 'Social Proof', icon: 'bi-people', order: 6 },
+            forms: { label: 'Forms', icon: 'bi-envelope', order: 7 },
+            advanced: { label: 'Advanced', icon: 'bi-code-slash', order: 8 }
+        },
+        widgets: {
+            hero: {
+                name: 'Hero Banner',
+                description: 'Full-width hero with image and CTA',
+                icon: 'bi-aspect-ratio',
+                category: 'layout',
+                supports_data_binding: false,
+                default_data: {
+                    title: 'Welcome to Our Store',
+                    subtitle: 'Discover amazing products',
+                    background_image: '',
+                    overlay_color: 'rgba(0,0,0,0.4)',
+                    text_color: '#ffffff',
+                    cta_text: 'Shop Now',
+                    cta_link: '/products',
+                    alignment: 'center',
+                    height: '500px'
+                },
+                default_settings: {
+                    full_width: true,
+                    parallax: false
+                }
+            },
+            rich_text: {
+                name: 'Rich Text',
+                description: 'WYSIWYG content block',
+                icon: 'bi-text-paragraph',
+                category: 'content',
+                supports_data_binding: false,
+                default_data: {
+                    content: '<p>Enter your content here...</p>'
+                },
+                default_settings: {
+                    max_width: '800px',
+                    text_align: 'left'
+                }
+            },
+            product_showcase: {
+                name: 'Product Showcase',
+                description: 'Display products from catalog',
+                icon: 'bi-gem',
+                category: 'ecommerce',
+                supports_data_binding: true,
+                data_provider_types: ['products'],
+                default_data: {
+                    title: 'Featured Products',
+                    subtitle: '',
+                    source: 'featured',
+                    category_id: null,
+                    product_ids: [],
+                    limit: 8
+                },
+                default_settings: {
+                    layout: 'grid',
+                    columns: 4,
+                    show_price: true,
+                    show_rating: true,
+                    show_add_to_cart: true
+                }
+            },
+            category_grid: {
+                name: 'Category Grid',
+                description: 'Display product categories',
+                icon: 'bi-grid-3x3',
+                category: 'ecommerce',
+                supports_data_binding: true,
+                data_provider_types: ['categories'],
+                default_data: {
+                    title: 'Shop by Category',
+                    subtitle: '',
+                    source: 'all',
+                    category_ids: [],
+                    limit: 6
+                },
+                default_settings: {
+                    layout: 'grid',
+                    columns: 3,
+                    show_product_count: true
+                }
+            },
+            offer_banner: {
+                name: 'Offer Banner',
+                description: 'Promotional banner with countdown',
+                icon: 'bi-tag',
+                category: 'ecommerce',
+                supports_data_binding: true,
+                data_provider_types: ['offers'],
+                default_data: {
+                    title: '',
+                    subtitle: '',
+                    offer_id: null,
+                    background_image: '',
+                    background_color: '#f8f9fa',
+                    cta_text: 'Shop Now',
+                    cta_link: ''
+                },
+                default_settings: {
+                    show_countdown: true,
+                    show_discount: true
+                }
+            }
+        }
     }
 }

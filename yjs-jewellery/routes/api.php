@@ -927,7 +927,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
         Route::post('/expire-old', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'expireReservations']);
     });
 
-    // ============ PAGE BUILDER / CMS ============
+    // ============ CMS KERNEL / PAGE BUILDER ============
     Route::prefix('cms')->group(function () {
         // Pages CRUD
         Route::get('/pages', [App\Http\Controllers\Admin\PageBuilderController::class, 'index']);
@@ -937,21 +937,33 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
         Route::delete('/pages/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'destroy']);
         Route::post('/pages/{id}/duplicate', [App\Http\Controllers\Admin\PageBuilderController::class, 'duplicate']);
         Route::get('/pages/{id}/preview', [App\Http\Controllers\Admin\PageBuilderController::class, 'preview']);
+        Route::post('/pages/{id}/unpublish', [App\Http\Controllers\Admin\PageBuilderController::class, 'unpublish']);
 
-        // Page Versions
+        // Version Management (Immutable Versioning)
         Route::get('/pages/{id}/versions', [App\Http\Controllers\Admin\PageBuilderController::class, 'versions']);
-        Route::post('/pages/{id}/versions/{versionId}/restore', [App\Http\Controllers\Admin\PageBuilderController::class, 'restoreVersion']);
+        Route::post('/pages/{pageId}/versions/{versionId}/revert', [App\Http\Controllers\Admin\PageBuilderController::class, 'revertVersion']);
+        Route::get('/versions/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'getVersion']);
+        Route::post('/versions/{id}/publish', [App\Http\Controllers\Admin\PageBuilderController::class, 'publishVersion']);
+        Route::post('/versions/{id}/schedule', [App\Http\Controllers\Admin\PageBuilderController::class, 'scheduleVersion']);
+        Route::get('/versions/compare', [App\Http\Controllers\Admin\PageBuilderController::class, 'compareVersions']);
+
+        // Content Types
+        Route::get('/content-types', [App\Http\Controllers\Admin\PageBuilderController::class, 'contentTypes']);
+
+        // Widgets Registry
+        Route::get('/widgets', [App\Http\Controllers\Admin\PageBuilderController::class, 'widgets']);
+        Route::get('/widgets/{identifier}/schema', [App\Http\Controllers\Admin\PageBuilderController::class, 'widgetSchema']);
+
+        // Data Providers (Dynamic Data Binding)
+        Route::get('/data-providers', [App\Http\Controllers\Admin\PageBuilderController::class, 'dataProviders']);
+        Route::get('/data-providers/{identifier}/schema', [App\Http\Controllers\Admin\PageBuilderController::class, 'dataProviderSchema']);
+        Route::post('/data-providers/preview', [App\Http\Controllers\Admin\PageBuilderController::class, 'previewDataBinding']);
 
         // Templates
         Route::get('/templates', [App\Http\Controllers\Admin\PageBuilderController::class, 'templates']);
-        Route::post('/templates', [App\Http\Controllers\Admin\PageBuilderController::class, 'storeTemplate']);
-        Route::get('/templates/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'showTemplate']);
-        Route::put('/templates/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'updateTemplate']);
-        Route::delete('/templates/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'destroyTemplate']);
 
         // Asset Upload
         Route::post('/assets/upload', [App\Http\Controllers\Admin\PageBuilderController::class, 'uploadAsset']);
-        Route::delete('/assets/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'deleteAsset']);
 
         // Block Data (E-commerce integration)
         Route::get('/block-data/products', [App\Http\Controllers\Admin\PageBuilderController::class, 'getProducts']);
@@ -960,32 +972,12 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
         // Global Sections (Header/Footer)
         Route::get('/global-sections', [App\Http\Controllers\Admin\PageBuilderController::class, 'globalSections']);
-        Route::get('/global-sections/{type}', [App\Http\Controllers\Admin\PageBuilderController::class, 'showGlobalSection']);
-        Route::put('/global-sections/{type}', [App\Http\Controllers\Admin\PageBuilderController::class, 'updateGlobalSection']);
 
         // Form Submissions
         Route::get('/form-submissions', [App\Http\Controllers\Admin\PageBuilderController::class, 'formSubmissions']);
-        Route::get('/form-submissions/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'showFormSubmission']);
-        Route::post('/form-submissions/{id}/read', [App\Http\Controllers\Admin\PageBuilderController::class, 'markFormSubmissionRead']);
-        Route::delete('/form-submissions/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'deleteFormSubmission']);
-        Route::get('/form-submissions/export', [App\Http\Controllers\Admin\PageBuilderController::class, 'exportFormSubmissions']);
-
-        // URL Redirects
-        Route::get('/redirects', [App\Http\Controllers\Admin\PageBuilderController::class, 'redirects']);
-        Route::post('/redirects', [App\Http\Controllers\Admin\PageBuilderController::class, 'createRedirect']);
-        Route::put('/redirects/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'updateRedirect']);
-        Route::delete('/redirects/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'deleteRedirect']);
 
         // Analytics
         Route::get('/analytics/overview', [App\Http\Controllers\Admin\PageBuilderController::class, 'analyticsOverview']);
-        Route::get('/analytics/pages/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'pageAnalytics']);
-
-        // SEO
-        Route::get('/pages/{id}/seo-analyze', [App\Http\Controllers\Admin\PageBuilderController::class, 'analyzeSeo']);
-        Route::post('/pages/{id}/seo-audit', [App\Http\Controllers\Admin\PageBuilderController::class, 'runSeoAudit']);
-        Route::get('/seo/dashboard', [App\Http\Controllers\Admin\PageBuilderController::class, 'seoDashboard']);
-        Route::post('/seo/sitemap/generate', [App\Http\Controllers\Admin\PageBuilderController::class, 'generateSitemap']);
-        Route::get('/seo/sitemap', [App\Http\Controllers\Admin\PageBuilderController::class, 'sitemapInfo']);
     });
 });
 
