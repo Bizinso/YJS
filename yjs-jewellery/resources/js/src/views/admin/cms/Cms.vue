@@ -1,7 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 
+const router = useRouter()
 const loading = ref(true)
 const pages = ref([])
 const showModal = ref(false)
@@ -29,6 +31,7 @@ const savePage = async () => {
 }
 
 const deletePage = async (page) => { if (confirm('Delete this page?')) { await axios.delete(`/api/admin/cms/pages/${page.id}`); fetchPages() } }
+const editInPageBuilder = (page) => { router.push({ name: 'admin.page-builder.edit', params: { id: page.id } }) }
 const generateSlug = () => { form.value.slug = form.value.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') }
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
 const getStatusClass = (s) => s === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -54,7 +57,13 @@ onMounted(() => fetchPages())
                         <td class="px-6 py-4 text-sm text-gray-500">/{{ page.slug }}</td>
                         <td class="px-6 py-4"><span :class="['px-2 py-1 text-xs rounded-full', getStatusClass(page.status)]">{{ page.status }}</span></td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ formatDate(page.updated_at) }}</td>
-                        <td class="px-6 py-4 text-right space-x-2"><button @click="openEditModal(page)" class="text-amber-600 hover:text-amber-900">Edit</button><button @click="deletePage(page)" class="text-red-600 hover:text-red-900">Delete</button></td>
+                        <td class="px-6 py-4 text-right space-x-2">
+                            <button @click="editInPageBuilder(page)" class="inline-flex items-center px-2 py-1 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded text-sm" title="Edit in Page Builder">
+                                <i class="bi bi-grid-1x2 me-1"></i>Builder
+                            </button>
+                            <button @click="openEditModal(page)" class="text-gray-600 hover:text-gray-900" title="Quick Edit">Edit</button>
+                            <button @click="deletePage(page)" class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
                     </tr>
                 </tbody>
             </table>
