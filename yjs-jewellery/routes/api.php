@@ -926,4 +926,88 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
         Route::get('/', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'reservations']);
         Route::post('/expire-old', [App\Http\Controllers\Admin\AdminWarehouseController::class, 'expireReservations']);
     });
+
+    // ============ PAGE BUILDER / CMS ============
+    Route::prefix('cms')->group(function () {
+        // Pages CRUD
+        Route::get('/pages', [App\Http\Controllers\Admin\PageBuilderController::class, 'index']);
+        Route::post('/pages', [App\Http\Controllers\Admin\PageBuilderController::class, 'store']);
+        Route::get('/pages/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'show']);
+        Route::put('/pages/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'update']);
+        Route::delete('/pages/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'destroy']);
+        Route::post('/pages/{id}/duplicate', [App\Http\Controllers\Admin\PageBuilderController::class, 'duplicate']);
+        Route::get('/pages/{id}/preview', [App\Http\Controllers\Admin\PageBuilderController::class, 'preview']);
+
+        // Page Versions
+        Route::get('/pages/{id}/versions', [App\Http\Controllers\Admin\PageBuilderController::class, 'versions']);
+        Route::post('/pages/{id}/versions/{versionId}/restore', [App\Http\Controllers\Admin\PageBuilderController::class, 'restoreVersion']);
+
+        // Templates
+        Route::get('/templates', [App\Http\Controllers\Admin\PageBuilderController::class, 'templates']);
+        Route::post('/templates', [App\Http\Controllers\Admin\PageBuilderController::class, 'storeTemplate']);
+        Route::get('/templates/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'showTemplate']);
+        Route::put('/templates/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'updateTemplate']);
+        Route::delete('/templates/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'destroyTemplate']);
+
+        // Asset Upload
+        Route::post('/assets/upload', [App\Http\Controllers\Admin\PageBuilderController::class, 'uploadAsset']);
+        Route::delete('/assets/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'deleteAsset']);
+
+        // Block Data (E-commerce integration)
+        Route::get('/block-data/products', [App\Http\Controllers\Admin\PageBuilderController::class, 'getProducts']);
+        Route::get('/block-data/categories', [App\Http\Controllers\Admin\PageBuilderController::class, 'getCategories']);
+        Route::get('/block-data/offers', [App\Http\Controllers\Admin\PageBuilderController::class, 'getOffers']);
+
+        // Global Sections (Header/Footer)
+        Route::get('/global-sections', [App\Http\Controllers\Admin\PageBuilderController::class, 'globalSections']);
+        Route::get('/global-sections/{type}', [App\Http\Controllers\Admin\PageBuilderController::class, 'showGlobalSection']);
+        Route::put('/global-sections/{type}', [App\Http\Controllers\Admin\PageBuilderController::class, 'updateGlobalSection']);
+
+        // Form Submissions
+        Route::get('/form-submissions', [App\Http\Controllers\Admin\PageBuilderController::class, 'formSubmissions']);
+        Route::get('/form-submissions/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'showFormSubmission']);
+        Route::post('/form-submissions/{id}/read', [App\Http\Controllers\Admin\PageBuilderController::class, 'markFormSubmissionRead']);
+        Route::delete('/form-submissions/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'deleteFormSubmission']);
+        Route::get('/form-submissions/export', [App\Http\Controllers\Admin\PageBuilderController::class, 'exportFormSubmissions']);
+
+        // URL Redirects
+        Route::get('/redirects', [App\Http\Controllers\Admin\PageBuilderController::class, 'redirects']);
+        Route::post('/redirects', [App\Http\Controllers\Admin\PageBuilderController::class, 'createRedirect']);
+        Route::put('/redirects/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'updateRedirect']);
+        Route::delete('/redirects/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'deleteRedirect']);
+
+        // Analytics
+        Route::get('/analytics/overview', [App\Http\Controllers\Admin\PageBuilderController::class, 'analyticsOverview']);
+        Route::get('/analytics/pages/{id}', [App\Http\Controllers\Admin\PageBuilderController::class, 'pageAnalytics']);
+
+        // SEO
+        Route::get('/pages/{id}/seo-analyze', [App\Http\Controllers\Admin\PageBuilderController::class, 'analyzeSeo']);
+        Route::post('/pages/{id}/seo-audit', [App\Http\Controllers\Admin\PageBuilderController::class, 'runSeoAudit']);
+        Route::get('/seo/dashboard', [App\Http\Controllers\Admin\PageBuilderController::class, 'seoDashboard']);
+        Route::post('/seo/sitemap/generate', [App\Http\Controllers\Admin\PageBuilderController::class, 'generateSitemap']);
+        Route::get('/seo/sitemap', [App\Http\Controllers\Admin\PageBuilderController::class, 'sitemapInfo']);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Public CMS Pages Routes (Frontend)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('pages')->group(function () {
+    // Get homepage
+    Route::get('/homepage', [App\Http\Controllers\PageController::class, 'homepage']);
+
+    // Get global sections (header/footer) for frontend layout
+    Route::get('/global/header', [App\Http\Controllers\PageController::class, 'header']);
+    Route::get('/global/footer', [App\Http\Controllers\PageController::class, 'footer']);
+
+    // Get page by slug
+    Route::get('/{slug}', [App\Http\Controllers\PageController::class, 'show'])->where('slug', '[a-z0-9\-]+');
+
+    // Form submission (public endpoint)
+    Route::post('/{pageId}/forms/{blockId}/submit', [App\Http\Controllers\PageController::class, 'submitForm']);
+
+    // Track page view (for analytics)
+    Route::post('/{pageId}/track-view', [App\Http\Controllers\PageController::class, 'trackView']);
 });

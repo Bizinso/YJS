@@ -31,6 +31,14 @@ import Inquiries from "../views/admin/inquiries/Inquiries.vue";
 import AccessControl from "../views/admin/access/AccessControl.vue";
 import Cms from "../views/admin/cms/Cms.vue";
 import Blog from "../views/admin/blog/Blog.vue";
+
+// Page Builder
+import PagesList from "../views/admin/page-builder/PagesList.vue";
+import PageBuilder from "../views/admin/page-builder/PageBuilder.vue";
+import GlobalSectionBuilder from "../views/admin/page-builder/GlobalSectionBuilder.vue";
+import FormSubmissions from "../views/admin/page-builder/FormSubmissions.vue";
+import UrlRedirects from "../views/admin/page-builder/UrlRedirects.vue";
+import Analytics from "../views/admin/page-builder/Analytics.vue";
 import Events from "../views/admin/events/Events.vue";
 import Exhibition from "../views/admin/exhibition/Exhibition.vue";
 import Brochures from "../views/admin/brochures/Brochures.vue";
@@ -91,6 +99,7 @@ import OrderSuccess from '../views/frontend/OrderSuccess.vue'
 
 // Customer Views
 import FlashSales from '../views/frontend/FlashSales.vue'
+import DynamicPage from '../views/frontend/DynamicPage.vue'
 import Promotions from '../views/frontend/Promotions.vue'
 import LoyaltyDashboard from '../views/frontend/LoyaltyDashboard.vue'
 import ReferralDashboard from '../views/frontend/ReferralDashboard.vue'
@@ -201,6 +210,14 @@ const routes = [
   { path: '/admin/inquiries', name: 'admin.inquiries', component: Inquiries, meta: { requiresAuth: true, title: "Inquiries" } },
   { path: '/admin/access-control', name: 'admin.access-control', component: AccessControl, meta: { requiresAuth: true, title: "Access Control" } },
   { path: '/admin/cms', name: 'admin.cms', component: Cms, meta: { requiresAuth: true, title: "CMS" } },
+
+  // Page Builder
+  { path: '/admin/page-builder', name: 'admin.page-builder', component: PagesList, meta: { requiresAuth: true, title: "Page Builder", parent: "CMS" } },
+  { path: '/admin/page-builder/global/:type', name: 'admin.page-builder.global', component: GlobalSectionBuilder, meta: { requiresAuth: true, title: "Edit Header/Footer", parent: "CMS", layout: 'adminFull' } },
+  { path: '/admin/page-builder/form-submissions', name: 'admin.form-submissions', component: FormSubmissions, meta: { requiresAuth: true, title: "Form Submissions", parent: "CMS" } },
+  { path: '/admin/page-builder/redirects', name: 'admin.redirects', component: UrlRedirects, meta: { requiresAuth: true, title: "URL Redirects", parent: "CMS" } },
+  { path: '/admin/page-builder/analytics', name: 'admin.analytics', component: Analytics, meta: { requiresAuth: true, title: "Analytics", parent: "CMS" } },
+  { path: '/admin/page-builder/:id', name: 'admin.page-builder.edit', component: PageBuilder, meta: { requiresAuth: true, title: "Edit Page", parent: "CMS", layout: 'adminFull' } },
   { path: '/admin/blog', name: 'admin.blog', component: Blog, meta: { requiresAuth: true, title: "Blog" } },
   { path: '/admin/events', name: 'admin.events', component: Events, meta: { requiresAuth: true, title: "Events" } },
   { path: '/admin/exhibition', name: 'admin.exhibitions', component: Exhibition, meta: { requiresAuth: true, title: "Exhibition" } },
@@ -302,6 +319,9 @@ const routes = [
   { path: '/verticalTabs', name: 'verticalTabs', component: verticalTabs, meta: { requiresAuth: false, layout: 'full', title: "Vertical Tabs" } },
   { path: '/viewDetailsMaster', name: 'viewDetailsMaster', component: viewDetailsMaster, meta: { requiresAuth: false, layout: 'full', title: "View Details Master" } },
   { path: '/breadcrumbs', name: 'breadcrumbs', component: breadcrumbs, meta: { requiresAuth: false, layout: 'full', title: "Breadcrumbs" } },
+
+  // CMS Dynamic Pages
+  { path: '/page/:slug', name: 'dynamicPage', component: DynamicPage, meta: { requiresAuth: false, layout: 'full', title: "Page" } },
 
   // Fallback
   { path: '/:pathMatch(.*)*', redirect: '/' },
