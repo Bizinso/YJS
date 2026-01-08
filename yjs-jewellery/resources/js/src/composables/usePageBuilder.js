@@ -47,6 +47,16 @@ export function usePageBuilder() {
     const canUndo = computed(() => undoStack.value.length > 0)
     const canRedo = computed(() => redoStack.value.length > 0)
 
+    // Block config (alias for backward compatibility with BlockToolbox)
+    // Maps 'widgets' to 'blocks' for compatibility
+    const blockConfig = computed(() => {
+        if (!widgetRegistry.value) return null
+        return {
+            categories: widgetRegistry.value.categories || {},
+            blocks: widgetRegistry.value.widgets || widgetRegistry.value.blocks || {}
+        }
+    })
+
     const currentVersion = computed(() => versioning.currentVersion)
     const publishedVersion = computed(() => versioning.publishedVersion)
     const draftVersion = computed(() => versioning.draftVersion)
@@ -97,18 +107,22 @@ export function usePageBuilder() {
     /**
      * Load widget registry from backend
      */
-    const loadWidgetRegistry = async () => {
-        if (widgetRegistry.value) return widgetRegistry.value
+    const loadWidgetRegistry = async (forceRefresh = false) => {
+        // Skip cache if force refresh requested
+        if (!forceRefresh && widgetRegistry.value) return widgetRegistry.value
 
         try {
             const response = await axiosAdmin.get('/cms/widgets')
 
-            if (response.data.success) {
+            if (response.data.success && response.data.data) {
                 widgetRegistry.value = response.data.data
                 return widgetRegistry.value
+            } else {
+                // Fall back to default config
+                widgetRegistry.value = getDefaultWidgetConfig()
             }
         } catch (error) {
-            console.error('Error loading widget registry:', error)
+            console.error('Error loading widget registry:', error.message)
             // Fall back to default config
             widgetRegistry.value = getDefaultWidgetConfig()
         }
@@ -243,6 +257,13 @@ export function usePageBuilder() {
 
         selectedWidgetId.value = newWidget.id
         return newWidget
+    }
+
+    /**
+     * Add a new block (alias for addWidget for backward compatibility)
+     */
+    const addBlock = (blockType, index = null) => {
+        return addWidget(blockType, index)
     }
 
     /**
@@ -444,12 +465,22 @@ export function usePageBuilder() {
         dataBinding.reset()
     }
 
+    /**
+     * Load block config (alias for loadWidgetRegistry for backward compatibility)
+     */
+    const loadBlockConfig = async (forceRefresh = false) => {
+        return await loadWidgetRegistry(forceRefresh)
+    }
+
     return {
         // State
         page,
         widgets,
+        blocks: widgets, // Alias for backward compatibility
         selectedWidgetId,
+        selectedBlockId: selectedWidgetId, // Alias for backward compatibility
         selectedWidget,
+        selectedBlock: selectedWidget, // Alias for backward compatibility
         selectedWidgetIndex,
         isDirty,
         isSaving,
@@ -458,6 +489,7 @@ export function usePageBuilder() {
         showSeoPanel,
         showVersionPanel,
         widgetRegistry,
+        blockConfig,
         canUndo,
         canRedo,
 
@@ -476,6 +508,7 @@ export function usePageBuilder() {
         // Methods - Page
         loadPage,
         loadWidgetRegistry,
+        loadBlockConfig,
         savePage,
         publishPage,
         revertToVersion,
@@ -483,16 +516,26 @@ export function usePageBuilder() {
 
         // Methods - Widget
         addWidget,
+        addBlock,
         updateWidget,
+        updateBlock: updateWidget, // Alias for backward compatibility
         updateWidgetData,
+        updateBlockData: updateWidgetData, // Alias for backward compatibility
         updateWidgetSettings,
+        updateBlockSettings: updateWidgetSettings, // Alias for backward compatibility
         updateWidgetStyle,
+        updateBlockStyle: updateWidgetStyle, // Alias for backward compatibility
         updateWidgetBinding,
         deleteWidget,
+        deleteBlock: deleteWidget, // Alias for backward compatibility
         duplicateWidget,
+        duplicateBlock: duplicateWidget, // Alias for backward compatibility
         moveWidget,
+        moveBlock: moveWidget, // Alias for backward compatibility
         selectWidget,
+        selectBlock: selectWidget, // Alias for backward compatibility
         deselectWidget,
+        deselectBlock: deselectWidget, // Alias for backward compatibility
 
         // Methods - History
         undo,

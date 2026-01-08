@@ -138,11 +138,13 @@ const stopAutoSave = () => {
 // Lifecycle
 onMounted(async () => {
     try {
-        await loadBlockConfig()
+        // Force refresh block config to get latest widgets from API
+        await loadBlockConfig(true)
         await loadPage(pageId.value)
         startAutoSave()
         window.addEventListener('keydown', handleKeydown)
     } catch (error) {
+        console.error('Failed to load page builder:', error)
         alert('Failed to load page')
         router.push({ name: 'admin.page-builder' })
     }

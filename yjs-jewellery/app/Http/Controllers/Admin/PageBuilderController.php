@@ -322,8 +322,55 @@ class PageBuilderController extends Controller
 
     public function widgets(): JsonResponse
     {
-        $widgets = Widget::getByCategory();
-        return response()->json(['success' => true, 'data' => $widgets]);
+        $widgets = Widget::active()->ordered()->get();
+
+        // Build categories metadata
+        $categoryMeta = [
+            'layout' => ['label' => 'Layout', 'icon' => 'bi-grid', 'order' => 1],
+            'content' => ['label' => 'Content', 'icon' => 'bi-file-text', 'order' => 2],
+            'media' => ['label' => 'Media', 'icon' => 'bi-image', 'order' => 3],
+            'ecommerce' => ['label' => 'E-commerce', 'icon' => 'bi-cart', 'order' => 4],
+            'conversion' => ['label' => 'Conversion', 'icon' => 'bi-bullseye', 'order' => 5],
+            'social' => ['label' => 'Social Proof', 'icon' => 'bi-people', 'order' => 6],
+            'forms' => ['label' => 'Forms', 'icon' => 'bi-envelope', 'order' => 7],
+            'advanced' => ['label' => 'Advanced', 'icon' => 'bi-code-slash', 'order' => 8],
+        ];
+
+        // Build widgets keyed by identifier with the format expected by frontend
+        $widgetsByIdentifier = [];
+        $usedCategories = [];
+
+        foreach ($widgets as $widget) {
+            $identifier = str_replace('-', '_', $widget->identifier); // Convert kebab-case to snake_case
+            $usedCategories[$widget->category] = true;
+
+            $widgetsByIdentifier[$identifier] = [
+                'name' => $widget->name,
+                'description' => $widget->description ?? '',
+                'icon' => $widget->icon ?? 'bi-square',
+                'category' => $widget->category,
+                'supports_data_binding' => $widget->supports_data_binding,
+                'data_provider_types' => $widget->data_provider_types ?? [],
+                'default_data' => $widget->default_config ?? [],
+                'default_settings' => [],
+                'admin_component' => $widget->admin_component,
+                'frontend_component' => $widget->frontend_component,
+            ];
+        }
+
+        // Only include categories that have widgets
+        $categories = array_filter($categoryMeta, function ($key) use ($usedCategories) {
+            return isset($usedCategories[$key]);
+        }, ARRAY_FILTER_USE_KEY);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'categories' => $categories,
+                'widgets' => $widgetsByIdentifier,
+                'blocks' => $widgetsByIdentifier, // Alias for backward compatibility
+            ],
+        ]);
     }
 
     public function widgetSchema(string $identifier): JsonResponse
