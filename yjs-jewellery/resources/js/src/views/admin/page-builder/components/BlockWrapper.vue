@@ -16,6 +16,7 @@ import TestimonialsBlockPreview from '../blocks/TestimonialsBlockPreview.vue'
 import ContactFormBlockPreview from '../blocks/ContactFormBlockPreview.vue'
 import FAQBlockPreview from '../blocks/FAQBlockPreview.vue'
 import CustomHtmlBlockPreview from '../blocks/CustomHtmlBlockPreview.vue'
+import GenericBlockPreview from '../blocks/GenericBlockPreview.vue'
 
 const props = defineProps({
     block: {
@@ -55,7 +56,7 @@ const blockComponents = {
 
 // Computed
 const blockComponent = computed(() => {
-    return blockComponents[props.block.type] || null
+    return blockComponents[props.block.type] || GenericBlockPreview
 })
 
 const blockInfo = computed(() => {
@@ -191,17 +192,9 @@ const handleToggleVisibility = (event) => {
 
             <!-- Block Preview Component -->
             <component
-                v-if="blockComponent"
                 :is="blockComponent"
                 :block="block"
             />
-
-            <!-- Fallback for unknown blocks -->
-            <div v-else class="p-6 bg-gray-50 border border-dashed border-gray-300 rounded text-center">
-                <i :class="['bi', blockInfo.icon, 'text-2xl text-gray-400']"></i>
-                <p class="mt-2 text-gray-500">{{ blockInfo.name }}</p>
-                <p class="text-xs text-gray-400">Block preview not available</p>
-            </div>
         </div>
     </div>
 </template>

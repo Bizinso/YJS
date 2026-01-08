@@ -16,6 +16,7 @@ import TestimonialsEditor from '../editors/TestimonialsEditor.vue'
 import ContactFormEditor from '../editors/ContactFormEditor.vue'
 import FAQEditor from '../editors/FAQEditor.vue'
 import CustomHtmlEditor from '../editors/CustomHtmlEditor.vue'
+import GenericBlockEditor from '../editors/GenericBlockEditor.vue'
 
 const {
     selectedBlock,
@@ -49,7 +50,7 @@ const editorComponents = {
 // Computed
 const editorComponent = computed(() => {
     if (!selectedBlock.value) return null
-    return editorComponents[selectedBlock.value.type] || null
+    return editorComponents[selectedBlock.value.type] || GenericBlockEditor
 })
 
 const blockInfo = computed(() => {
@@ -202,16 +203,11 @@ watch(() => selectedBlock.value?.id, () => {
             <!-- Content Tab -->
             <div v-show="activeTab === 'content'">
                 <component
-                    v-if="editorComponent"
                     :is="editorComponent"
                     :block="selectedBlock"
                     @update:data="handleDataUpdate"
                     @update:settings="handleSettingsUpdate"
                 />
-                <div v-else class="text-center py-8 text-gray-400">
-                    <i class="bi bi-gear text-3xl"></i>
-                    <p class="mt-2">No editor available for this block type</p>
-                </div>
             </div>
 
             <!-- Style Tab -->
