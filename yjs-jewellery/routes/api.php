@@ -959,6 +959,18 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
         Route::get('/data-providers/{identifier}/schema', [App\Http\Controllers\Admin\PageBuilderController::class, 'dataProviderSchema']);
         Route::post('/data-providers/preview', [App\Http\Controllers\Admin\PageBuilderController::class, 'previewDataBinding']);
 
+        // Content Types Management
+        Route::get('/content-types/field-types', [App\Http\Controllers\Admin\ContentTypeController::class, 'fieldTypes']);
+        Route::apiResource('/content-types', App\Http\Controllers\Admin\ContentTypeController::class);
+
+        // Taxonomies Management
+        Route::get('/taxonomies/{taxonomy}/terms', [App\Http\Controllers\Admin\TaxonomyController::class, 'terms']);
+        Route::post('/taxonomies/{taxonomy}/terms', [App\Http\Controllers\Admin\TaxonomyController::class, 'storeTerm']);
+        Route::put('/taxonomies/{taxonomy}/terms/{term}', [App\Http\Controllers\Admin\TaxonomyController::class, 'updateTerm']);
+        Route::delete('/taxonomies/{taxonomy}/terms/{term}', [App\Http\Controllers\Admin\TaxonomyController::class, 'destroyTerm']);
+        Route::post('/taxonomies/{taxonomy}/terms/reorder', [App\Http\Controllers\Admin\TaxonomyController::class, 'reorderTerms']);
+        Route::apiResource('/taxonomies', App\Http\Controllers\Admin\TaxonomyController::class);
+
         // Templates
         Route::get('/templates', [App\Http\Controllers\Admin\PageBuilderController::class, 'templates']);
 
@@ -970,8 +982,32 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
         Route::get('/block-data/categories', [App\Http\Controllers\Admin\PageBuilderController::class, 'getCategories']);
         Route::get('/block-data/offers', [App\Http\Controllers\Admin\PageBuilderController::class, 'getOffers']);
 
-        // Global Sections (Header/Footer)
-        Route::get('/global-sections', [App\Http\Controllers\Admin\PageBuilderController::class, 'globalSections']);
+        // Global Sections (Header/Footer) - with Immutable Versioning
+        Route::prefix('global-sections')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\GlobalSectionController::class, 'index']);
+            Route::post('/', [App\Http\Controllers\Admin\GlobalSectionController::class, 'store']);
+            Route::get('/{globalSection}', [App\Http\Controllers\Admin\GlobalSectionController::class, 'show']);
+            Route::put('/{globalSection}', [App\Http\Controllers\Admin\GlobalSectionController::class, 'update']);
+            Route::delete('/{globalSection}', [App\Http\Controllers\Admin\GlobalSectionController::class, 'destroy']);
+
+            // By type (convenience endpoints)
+            Route::put('/type/{type}', [App\Http\Controllers\Admin\GlobalSectionController::class, 'updateByType']);
+
+            // Publishing
+            Route::post('/{globalSection}/publish', [App\Http\Controllers\Admin\GlobalSectionController::class, 'publish']);
+            Route::post('/{globalSection}/unpublish', [App\Http\Controllers\Admin\GlobalSectionController::class, 'unpublish']);
+            Route::post('/{globalSection}/set-default', [App\Http\Controllers\Admin\GlobalSectionController::class, 'setDefault']);
+
+            // Version History
+            Route::get('/{globalSection}/versions', [App\Http\Controllers\Admin\GlobalSectionController::class, 'versions']);
+            Route::post('/{globalSection}/rollback', [App\Http\Controllers\Admin\GlobalSectionController::class, 'rollback']);
+        });
+
+        // Global Section Versions
+        Route::prefix('global-section-versions')->group(function () {
+            Route::get('/{version}', [App\Http\Controllers\Admin\GlobalSectionController::class, 'showVersion']);
+            Route::post('/{version}/publish', [App\Http\Controllers\Admin\GlobalSectionController::class, 'publishVersion']);
+        });
 
         // Form Submissions
         Route::get('/form-submissions', [App\Http\Controllers\Admin\PageBuilderController::class, 'formSubmissions']);

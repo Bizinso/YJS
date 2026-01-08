@@ -7,6 +7,9 @@ use App\Models\GlobalSection;
 use App\Models\FormSubmission;
 use App\Models\PageAnalytics;
 use App\Models\UrlRedirect;
+use App\Models\Cms\Page;
+use App\Models\Cms\UrlRedirect as CmsUrlRedirect;
+use App\Services\Cms\CmsCacheService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
@@ -15,11 +18,28 @@ use Illuminate\Support\Facades\Validator;
 
 class PageController extends Controller
 {
+    public function __construct(
+        protected ?CmsCacheService $cacheService = null
+    ) {}
+
     /**
-     * Get the homepage.
+     * Get the homepage (with caching).
      */
     public function homepage(): JsonResponse
     {
+        // Try new CMS Kernel first (with caching)
+        if ($this->cacheService) {
+            $pageData = $this->cacheService->getHomepage();
+
+            if ($pageData) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $pageData,
+                ]);
+            }
+        }
+
+        // Fallback to legacy CmsPage
         $page = CmsPage::where('type', 'homepage')
             ->published()
             ->first();
@@ -38,24 +58,54 @@ class PageController extends Controller
     }
 
     /**
-     * Get a page by slug.
+     * Get a page by slug (with caching).
      */
     public function show(string $slug): JsonResponse
     {
-        // First check for redirects
-        $redirect = UrlRedirect::findForUrl('/' . $slug);
+        // First check for redirects (new CMS)
+        $redirect = CmsUrlRedirect::where('old_url', '/' . $slug)
+            ->orWhere('old_url', $slug)
+            ->where('is_active', true)
+            ->first();
 
         if ($redirect) {
-            $redirect->incrementHits();
+            $redirect->increment('hits');
 
             return response()->json([
                 'success' => true,
                 'redirect' => true,
                 'redirect_url' => $redirect->new_url,
-                'redirect_type' => $redirect->getHttpStatusCode(),
+                'redirect_type' => (int) $redirect->type,
             ]);
         }
 
+        // Legacy redirect check
+        $legacyRedirect = UrlRedirect::findForUrl('/' . $slug);
+
+        if ($legacyRedirect) {
+            $legacyRedirect->incrementHits();
+
+            return response()->json([
+                'success' => true,
+                'redirect' => true,
+                'redirect_url' => $legacyRedirect->new_url,
+                'redirect_type' => $legacyRedirect->getHttpStatusCode(),
+            ]);
+        }
+
+        // Try new CMS Kernel (with caching)
+        if ($this->cacheService) {
+            $pageData = $this->cacheService->getPublishedPage($slug);
+
+            if ($pageData) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $pageData,
+                ]);
+            }
+        }
+
+        // Fallback to legacy CmsPage
         $page = CmsPage::where('slug', $slug)
             ->published()
             ->first();
@@ -74,10 +124,23 @@ class PageController extends Controller
     }
 
     /**
-     * Get active header section.
+     * Get active header section (with caching).
      */
     public function header(): JsonResponse
     {
+        // Try new CMS Kernel (with caching)
+        if ($this->cacheService) {
+            $headerData = $this->cacheService->getGlobalSection('header');
+
+            if ($headerData) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $headerData,
+                ]);
+            }
+        }
+
+        // Fallback to legacy GlobalSection
         $header = GlobalSection::getActiveHeader();
 
         if (!$header) {
@@ -99,10 +162,23 @@ class PageController extends Controller
     }
 
     /**
-     * Get active footer section.
+     * Get active footer section (with caching).
      */
     public function footer(): JsonResponse
     {
+        // Try new CMS Kernel (with caching)
+        if ($this->cacheService) {
+            $footerData = $this->cacheService->getGlobalSection('footer');
+
+            if ($footerData) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $footerData,
+                ]);
+            }
+        }
+
+        // Fallback to legacy GlobalSection
         $footer = GlobalSection::getActiveFooter();
 
         if (!$footer) {

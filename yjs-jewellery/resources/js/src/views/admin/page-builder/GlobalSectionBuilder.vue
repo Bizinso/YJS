@@ -39,10 +39,20 @@ const router = useRouter()
 const sectionType = computed(() => route.params.type || 'header')
 const loading = ref(true)
 const saving = ref(false)
+const publishing = ref(false)
 const section = ref(null)
 const blocks = ref([])
 const selectedBlockId = ref(null)
 const isDirty = ref(false)
+
+// Version state
+const versionHistory = ref([])
+const showVersionPanel = ref(false)
+const showChangeNoteModal = ref(false)
+const changeNote = ref('')
+const loadingVersions = ref(false)
+const selectedVersionId = ref(null)
+const previewVersion = ref(null)
 
 const previewComponents = {
     logo: LogoBlockPreview,
@@ -96,6 +106,12 @@ const selectedBlock = computed(() => {
     if (!selectedBlockId.value) return null
     return blocks.value.find(b => b.id === selectedBlockId.value)
 })
+
+// Computed for version status
+const hasUnpublishedChanges = computed(() => section.value?.has_unpublished_changes ?? false)
+const isPublished = computed(() => section.value?.is_published ?? false)
+const draftVersionNumber = computed(() => section.value?.draft_version_number ?? 0)
+const publishedVersionNumber = computed(() => section.value?.published_version_number ?? null)
 
 const blockDefaults = {
     logo: {
@@ -154,15 +170,24 @@ watch(() => route.params.type, () => {
 
 async function loadSection() {
     loading.value = true
+    previewVersion.value = null
+    selectedVersionId.value = null
     try {
         const { data } = await axiosAdmin.get('/cms/global-sections')
         const sectionData = data.data[sectionType.value]
 
         if (sectionData) {
             section.value = sectionData
-            blocks.value = sectionData.blocks || []
+            blocks.value = sectionData.blocks || sectionData.widgets || []
         } else {
-            section.value = { type: sectionType.value, name: sectionType.value === 'header' ? 'Header' : 'Footer', is_active: true }
+            section.value = {
+                type: sectionType.value,
+                name: sectionType.value === 'header' ? 'Header' : 'Footer',
+                is_active: true,
+                is_published: false,
+                has_unpublished_changes: false,
+                draft_version_number: 0
+            }
             blocks.value = []
         }
         selectedBlockId.value = null
@@ -171,6 +196,30 @@ async function loadSection() {
         console.error('Failed to load section:', error)
     } finally {
         loading.value = false
+    }
+}
+
+async function loadVersionHistory() {
+    if (!section.value?.id) return
+
+    loadingVersions.value = true
+    try {
+        const { data } = await axiosAdmin.get(`/cms/global-sections/${section.value.id}/versions`)
+        versionHistory.value = data.data
+    } catch (error) {
+        console.error('Failed to load versions:', error)
+    } finally {
+        loadingVersions.value = false
+    }
+}
+
+async function loadVersion(versionId) {
+    try {
+        const { data } = await axiosAdmin.get(`/cms/global-section-versions/${versionId}`)
+        previewVersion.value = data.data
+        selectedVersionId.value = versionId
+    } catch (error) {
+        console.error('Failed to load version:', error)
     }
 }
 
@@ -241,22 +290,138 @@ function onDragEnd() {
     isDirty.value = true
 }
 
+// Open change note modal before saving
+function promptSave() {
+    if (!isDirty.value) return
+    changeNote.value = ''
+    showChangeNoteModal.value = true
+}
+
+// Save creates NEW version (immutable)
 async function save() {
     saving.value = true
+    showChangeNoteModal.value = false
     try {
-        await axiosAdmin.put(`/cms/global-sections/${sectionType.value}`, {
+        const endpoint = section.value?.id
+            ? `/cms/global-sections/${section.value.id}`
+            : `/cms/global-sections/type/${sectionType.value}`
+
+        const { data } = await axiosAdmin.put(endpoint, {
             name: section.value.name,
-            blocks: blocks.value,
+            widgets: blocks.value,
             settings: section.value.settings || {},
-            is_active: section.value.is_active
+            is_active: section.value.is_active,
+            change_note: changeNote.value || null
         })
+
+        section.value = data.data
         isDirty.value = false
-        alert(`${sectionType.value === 'header' ? 'Header' : 'Footer'} saved successfully!`)
+        changeNote.value = ''
+
+        // Refresh version history if panel is open
+        if (showVersionPanel.value) {
+            await loadVersionHistory()
+        }
     } catch (error) {
         console.error('Failed to save:', error)
         alert('Failed to save. Please try again.')
     } finally {
         saving.value = false
+    }
+}
+
+// Publish current draft
+async function publish() {
+    if (!section.value?.id) {
+        alert('Please save the section first')
+        return
+    }
+
+    publishing.value = true
+    try {
+        const { data } = await axiosAdmin.post(`/cms/global-sections/${section.value.id}/publish`)
+        section.value = data.data
+
+        // Refresh version history if panel is open
+        if (showVersionPanel.value) {
+            await loadVersionHistory()
+        }
+    } catch (error) {
+        console.error('Failed to publish:', error)
+        alert('Failed to publish. Please try again.')
+    } finally {
+        publishing.value = false
+    }
+}
+
+// Unpublish section
+async function unpublish() {
+    if (!section.value?.id || !confirm('Are you sure you want to unpublish this section?')) return
+
+    try {
+        await axiosAdmin.post(`/cms/global-sections/${section.value.id}/unpublish`)
+        section.value.is_published = false
+        section.value.published_version_id = null
+        section.value.published_version_number = null
+
+        // Refresh version history if panel is open
+        if (showVersionPanel.value) {
+            await loadVersionHistory()
+        }
+    } catch (error) {
+        console.error('Failed to unpublish:', error)
+        alert('Failed to unpublish. Please try again.')
+    }
+}
+
+// Rollback to previous version (creates NEW version)
+async function rollbackToVersion(versionId) {
+    const version = versionHistory.value.find(v => v.id === versionId)
+    if (!version) return
+
+    if (!confirm(`Rollback to version ${version.version_number}? This will create a new version based on that content.`)) {
+        return
+    }
+
+    try {
+        const { data } = await axiosAdmin.post(`/cms/global-sections/${section.value.id}/rollback`, {
+            version_id: versionId,
+            reason: `Rolled back to version ${version.version_number}`
+        })
+
+        section.value = data.data
+        blocks.value = data.data.blocks || data.data.widgets || []
+        previewVersion.value = null
+        selectedVersionId.value = null
+        await loadVersionHistory()
+    } catch (error) {
+        console.error('Failed to rollback:', error)
+        alert('Failed to rollback. Please try again.')
+    }
+}
+
+// Apply preview version to canvas (for comparison)
+function applyPreviewVersion() {
+    if (previewVersion.value) {
+        blocks.value = previewVersion.value.widgets || []
+        isDirty.value = true
+        previewVersion.value = null
+        selectedVersionId.value = null
+        showVersionPanel.value = false
+    }
+}
+
+// Cancel preview
+function cancelPreview() {
+    previewVersion.value = null
+    selectedVersionId.value = null
+    loadSection()
+}
+
+function toggleVersionPanel() {
+    showVersionPanel.value = !showVersionPanel.value
+    if (showVersionPanel.value && versionHistory.value.length === 0) {
+        loadVersionHistory()
     }
 }
 
@@ -271,6 +436,11 @@ function getBlockLabel(type) {
     const allBlocks = [...headerBlocks, ...footerBlocks]
     return allBlocks.find(b => b.type === type)?.label || type
 }
+
+function formatDate(dateString) {
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleString()
+}
 </script>
 
 <template>
@@ -282,10 +452,18 @@ function getBlockLabel(type) {
                     <i class="bi bi-arrow-left text-xl"></i>
                 </button>
                 <div>
-                    <h1 class="text-lg font-semibold">
+                    <h1 class="text-lg font-semibold flex items-center gap-2">
                         Edit {{ sectionType === 'header' ? 'Header' : 'Footer' }}
+                        <span v-if="draftVersionNumber" class="text-sm font-normal text-gray-500">
+                            v{{ draftVersionNumber }}
+                        </span>
                     </h1>
-                    <p class="text-xs text-gray-500">Global section that appears on all pages</p>
+                    <p class="text-xs text-gray-500">
+                        Global section that appears on all pages
+                        <template v-if="hasUnpublishedChanges">
+                            <span class="text-amber-600 font-medium">• Unpublished changes</span>
+                        </template>
+                    </p>
                 </div>
             </div>
 
@@ -306,21 +484,68 @@ function getBlockLabel(type) {
                     </router-link>
                 </div>
 
+                <!-- Version History Toggle -->
+                <button
+                    @click="toggleVersionPanel"
+                    :class="['px-3 py-2 rounded-lg flex items-center gap-2 transition-colors', showVersionPanel ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']"
+                    :disabled="!section?.id"
+                >
+                    <i class="bi bi-clock-history"></i>
+                    <span class="text-sm">History</span>
+                </button>
+
                 <!-- Active Toggle -->
                 <label class="flex items-center gap-2 text-sm">
-                    <input type="checkbox" v-model="section.is_active" class="rounded border-gray-300 text-amber-600">
+                    <input type="checkbox" v-model="section.is_active" class="rounded border-gray-300 text-amber-600" @change="isDirty = true">
                     <span>Active</span>
                 </label>
 
                 <!-- Save Button -->
                 <button
-                    @click="save"
+                    @click="promptSave"
                     :disabled="saving || !isDirty"
-                    class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                     <i v-if="saving" class="bi bi-arrow-repeat animate-spin"></i>
-                    <i v-else class="bi bi-check-lg"></i>
-                    {{ saving ? 'Saving...' : 'Save Changes' }}
+                    <i v-else class="bi bi-save"></i>
+                    {{ saving ? 'Saving...' : 'Save Draft' }}
+                </button>
+
+                <!-- Publish Button -->
+                <button
+                    @click="publish"
+                    :disabled="publishing || !section?.id || (!isDirty && !hasUnpublishedChanges)"
+                    class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                    <i v-if="publishing" class="bi bi-arrow-repeat animate-spin"></i>
+                    <i v-else class="bi bi-globe"></i>
+                    {{ publishing ? 'Publishing...' : 'Publish' }}
+                </button>
+
+                <!-- Unpublish -->
+                <button
+                    v-if="isPublished"
+                    @click="unpublish"
+                    class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    title="Unpublish"
+                >
+                    <i class="bi bi-globe2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview Version Banner -->
+        <div v-if="previewVersion" class="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-amber-800">
+                <i class="bi bi-eye"></i>
+                <span>Previewing version {{ previewVersion.version_number }} from {{ formatDate(previewVersion.created_at) }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button @click="applyPreviewVersion" class="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700">
+                    Apply This Version
+                </button>
+                <button @click="cancelPreview" class="px-3 py-1 bg-white border border-amber-300 text-amber-700 rounded text-sm hover:bg-amber-50">
+                    Cancel Preview
                 </button>
             </div>
         </div>
@@ -424,9 +649,73 @@ function getBlockLabel(type) {
                 </div>
             </div>
 
-            <!-- Right: Block Editor -->
+            <!-- Right: Block Editor OR Version Panel -->
             <div class="w-80 bg-white border-l overflow-y-auto">
-                <div v-if="selectedBlock" class="p-4">
+                <!-- Version History Panel -->
+                <div v-if="showVersionPanel" class="p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-800">
+                            <i class="bi bi-clock-history me-2"></i>Version History
+                        </h3>
+                        <button @click="showVersionPanel = false" class="text-gray-400 hover:text-gray-600">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+
+                    <div v-if="loadingVersions" class="text-center py-8">
+                        <i class="bi bi-arrow-repeat animate-spin text-2xl text-gray-400"></i>
+                    </div>
+
+                    <div v-else-if="versionHistory.length === 0" class="text-center py-8 text-gray-400">
+                        <i class="bi bi-clock text-3xl mb-2"></i>
+                        <p class="text-sm">No version history yet</p>
+                    </div>
+
+                    <div v-else class="space-y-2">
+                        <div
+                            v-for="version in versionHistory"
+                            :key="version.id"
+                            :class="[
+                                'p-3 rounded-lg border cursor-pointer transition-colors',
+                                selectedVersionId === version.id ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+                            ]"
+                            @click="loadVersion(version.id)"
+                        >
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-medium text-gray-800">
+                                    Version {{ version.version_number }}
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <span v-if="version.is_published" class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                        Published
+                                    </span>
+                                    <span v-if="version.is_draft" class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                                        Draft
+                                    </span>
+                                </div>
+                            </div>
+                            <p v-if="version.change_note" class="text-sm text-gray-600 mb-1">
+                                {{ version.change_note }}
+                            </p>
+                            <div class="text-xs text-gray-400">
+                                {{ formatDate(version.created_at) }} by {{ version.created_by }}
+                            </div>
+
+                            <!-- Version Actions -->
+                            <div v-if="selectedVersionId === version.id && !version.is_draft" class="mt-2 pt-2 border-t flex gap-2">
+                                <button
+                                    @click.stop="rollbackToVersion(version.id)"
+                                    class="flex-1 px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                                >
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Block Editor Panel -->
+                <div v-else-if="selectedBlock" class="p-4">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-semibold text-gray-800">
                             {{ getBlockLabel(selectedBlock.type) }}
@@ -447,6 +736,36 @@ function getBlockLabel(type) {
                 <div v-else class="p-6 text-center text-gray-400">
                     <i class="bi bi-cursor text-3xl mb-2"></i>
                     <p class="text-sm">Select a block to edit its settings</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Note Modal -->
+        <div v-if="showChangeNoteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                <h3 class="text-lg font-semibold mb-4">Save New Version</h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Add an optional note describing your changes. This helps track what was modified in each version.
+                </p>
+                <textarea
+                    v-model="changeNote"
+                    placeholder="e.g., Updated navigation links, Added new announcement..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 mb-4"
+                    rows="3"
+                ></textarea>
+                <div class="flex justify-end gap-3">
+                    <button
+                        @click="showChangeNoteModal = false"
+                        class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        @click="save"
+                        class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                    >
+                        Save Version
+                    </button>
                 </div>
             </div>
         </div>

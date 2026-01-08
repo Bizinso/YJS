@@ -135,6 +135,9 @@ class VersionService
                 'published_by' => $userId ?? auth()->id(),
             ]);
 
+            // Invalidate cache on publish
+            $this->invalidatePageCache($page);
+
             return $version;
         });
     }
@@ -155,6 +158,24 @@ class VersionService
             CmsAuditLog::logPage($page, 'unpublished', null, [
                 'previous_version' => $previousPublished->version_number,
             ]);
+        }
+
+        // Invalidate cache on unpublish
+        $this->invalidatePageCache($page);
+    }
+
+    /**
+     * Invalidate page cache when publishing/unpublishing.
+     */
+    protected function invalidatePageCache(Page $page): void
+    {
+        try {
+            if (app()->bound(CmsCacheService::class)) {
+                app(CmsCacheService::class)->invalidatePageCache($page);
+            }
+        } catch (\Exception $e) {
+            // Don't fail publish on cache issues
+            \Log::warning("Cache invalidation failed for page {$page->slug}: " . $e->getMessage());
         }
     }
 

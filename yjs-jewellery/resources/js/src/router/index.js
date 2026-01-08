@@ -39,6 +39,8 @@ import GlobalSectionBuilder from "../views/admin/page-builder/GlobalSectionBuild
 import FormSubmissions from "../views/admin/page-builder/FormSubmissions.vue";
 import UrlRedirects from "../views/admin/page-builder/UrlRedirects.vue";
 import Analytics from "../views/admin/page-builder/Analytics.vue";
+import ContentTypes from "../views/admin/cms/ContentTypes.vue";
+import Taxonomies from "../views/admin/cms/Taxonomies.vue";
 import Events from "../views/admin/events/Events.vue";
 import Exhibition from "../views/admin/exhibition/Exhibition.vue";
 import Brochures from "../views/admin/brochures/Brochures.vue";
@@ -218,6 +220,8 @@ const routes = [
   { path: '/admin/page-builder/redirects', name: 'admin.redirects', component: UrlRedirects, meta: { requiresAuth: true, title: "URL Redirects", parent: "CMS" } },
   { path: '/admin/page-builder/analytics', name: 'admin.analytics', component: Analytics, meta: { requiresAuth: true, title: "Analytics", parent: "CMS" } },
   { path: '/admin/page-builder/:id', name: 'admin.page-builder.edit', component: PageBuilder, meta: { requiresAuth: true, title: "Edit Page", parent: "CMS", layout: 'adminFull' } },
+  { path: '/admin/cms/content-types', name: 'admin.content-types', component: ContentTypes, meta: { requiresAuth: true, title: "Content Types", parent: "CMS" } },
+  { path: '/admin/cms/taxonomies', name: 'admin.taxonomies', component: Taxonomies, meta: { requiresAuth: true, title: "Taxonomies", parent: "CMS" } },
   { path: '/admin/blog', name: 'admin.blog', component: Blog, meta: { requiresAuth: true, title: "Blog" } },
   { path: '/admin/events', name: 'admin.events', component: Events, meta: { requiresAuth: true, title: "Events" } },
   { path: '/admin/exhibition', name: 'admin.exhibitions', component: Exhibition, meta: { requiresAuth: true, title: "Exhibition" } },

@@ -6,6 +6,9 @@ use Illuminate\Support\ServiceProvider;
 use App\Services\Cms\DataBindingService;
 use App\Services\Cms\VersionService;
 use App\Services\Cms\PageService;
+use App\Services\Cms\GlobalSectionService;
+use App\Services\Cms\RenderService;
+use App\Services\Cms\CmsCacheService;
 use App\Services\Cms\Providers\ProductProvider;
 use App\Services\Cms\Providers\CategoryProvider;
 use App\Services\Cms\Providers\OfferProvider;
@@ -34,10 +37,30 @@ class CmsServiceProvider extends ServiceProvider
             return new VersionService();
         });
 
+        // Register RenderService as singleton
+        $this->app->singleton(RenderService::class, function ($app) {
+            return new RenderService(
+                $app->make(DataBindingService::class)
+            );
+        });
+
         // Register PageService with dependencies
         $this->app->singleton(PageService::class, function ($app) {
             return new PageService(
                 $app->make(VersionService::class),
+                $app->make(DataBindingService::class)
+            );
+        });
+
+        // Register GlobalSectionService as singleton
+        $this->app->singleton(GlobalSectionService::class, function ($app) {
+            return new GlobalSectionService();
+        });
+
+        // Register CmsCacheService as singleton
+        $this->app->singleton(CmsCacheService::class, function ($app) {
+            return new CmsCacheService(
+                $app->make(RenderService::class),
                 $app->make(DataBindingService::class)
             );
         });
