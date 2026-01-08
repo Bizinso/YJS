@@ -15,7 +15,7 @@ use App\Models\PageBlockAsset;
 use App\Models\UrlRedirect;
 use App\Models\Product;
 use App\Models\Category;
-use App\Models\Offer;
+use App\Models\offers;
 use App\Services\Cms\PageService;
 use App\Services\Cms\VersionService;
 use App\Services\Cms\DataBindingService;
@@ -502,7 +502,7 @@ class PageBuilderController extends Controller
 
     public function getCategories(): JsonResponse
     {
-        $categories = Category::select('id', 'name', 'parent_id', 'slug', 'image')
+        $categories = Category::select('id', 'name', 'parent_id', 'slug')
                               ->where('status', 'A')
                               ->withCount('products')
                               ->get();
@@ -511,10 +511,10 @@ class PageBuilderController extends Controller
 
     public function getOffers(): JsonResponse
     {
-        $offers = Offer::select('id', 'title', 'coupon_code', 'discount_type', 'discount_amount', 'discount_percent', 'valid_from', 'valid_to')
+        $offersData = offers::select('id', 'title', 'coupon_code', 'discount_type', 'discount_amount', 'discount_percent', 'valid_from', 'valid_to')
                        ->where('status', 'active')
                        ->get();
-        return response()->json(['success' => true, 'data' => $offers]);
+        return response()->json(['success' => true, 'data' => $offersData]);
     }
 
     // ============ FORM SUBMISSIONS ============

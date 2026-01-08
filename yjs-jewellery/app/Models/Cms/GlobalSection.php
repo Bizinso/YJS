@@ -2,6 +2,8 @@
 
 namespace App\Models\Cms;
 
+use Database\Factories\Cms\GlobalSectionFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,7 +23,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class GlobalSection extends Model
 {
+    use HasFactory;
+
     protected $table = 'global_sections';
+
+    protected static function newFactory()
+    {
+        return GlobalSectionFactory::new();
+    }
 
     protected $fillable = [
         'type',

@@ -95,9 +95,29 @@ class CmsAuditLog extends Model
             'action' => $action,
             'old_values' => $oldValues,
             'new_values' => $newValues,
-            'user_id' => $userId ?? auth()->id(),
+            'user_id' => $userId ?? static::getCurrentUserId(),
             'ip_address' => request()->ip(),
         ]);
+    }
+
+    /**
+     * Get the current user ID for audit logging.
+     * Handles Employee authentication by using their linked user_id.
+     */
+    protected static function getCurrentUserId(): ?int
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return null;
+        }
+
+        // If authenticated as Employee, use their linked user_id
+        if ($user instanceof \App\Models\Employee) {
+            return $user->user_id;
+        }
+
+        return $user->id;
     }
 
     /**

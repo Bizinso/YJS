@@ -289,11 +289,28 @@ class GlobalSectionService
      */
     protected function getCurrentUserId(): int
     {
-        if (auth()->id()) {
-            return auth()->id();
+        $user = auth()->user();
+
+        // If authenticated as Employee, use their linked user_id
+        if ($user instanceof \App\Models\Employee) {
+            return $user->user_id ?? $this->getDefaultUserId();
         }
 
+        // If authenticated as regular User
+        if ($user) {
+            return $user->id;
+        }
+
+        return $this->getDefaultUserId();
+    }
+
+    /**
+     * Get the default user ID for system operations.
+     */
+    protected function getDefaultUserId(): int
+    {
         static $defaultUserId = null;
+
         if ($defaultUserId === null) {
             $defaultUserId = User::query()->min('id') ?? 1;
         }

@@ -402,6 +402,7 @@ class CmsCacheService
             'slug' => $page->slug,
             'title' => $version->title,
             'widgets' => $widgets,
+            'blocks' => $widgets, // Alias for frontend compatibility
             'layout_settings' => $version->layout_settings ?? [],
             'seo' => $version->seo ?? [],
             'custom_fields' => $version->custom_fields ?? [],

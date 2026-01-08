@@ -2,6 +2,8 @@
 
 namespace App\Models\Cms;
 
+use Database\Factories\Cms\WidgetFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -28,6 +30,12 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Widget extends Model
 {
+    use HasFactory;
+
+    protected static function newFactory()
+    {
+        return WidgetFactory::new();
+    }
     protected $table = 'widgets';
 
     protected $fillable = [

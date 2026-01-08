@@ -17,6 +17,7 @@ import TestimonialsBlock from './cms-blocks/TestimonialsBlock.vue'
 import ContactFormBlock from './cms-blocks/ContactFormBlock.vue'
 import FAQBlock from './cms-blocks/FAQBlock.vue'
 import CustomHtmlBlock from './cms-blocks/CustomHtmlBlock.vue'
+import GenericBlock from './cms-blocks/GenericBlock.vue'
 
 const route = useRoute()
 
@@ -44,6 +45,11 @@ const visibleBlocks = computed(() => {
     if (!page.value?.blocks) return []
     return page.value.blocks.filter(b => b.visible !== false)
 })
+
+// Get the appropriate component for a block type
+const getBlockComponent = (blockType) => {
+    return blockComponents[blockType] || GenericBlock
+}
 
 const fetchPage = async (slug) => {
     loading.value = true
@@ -165,7 +171,7 @@ onMounted(() => {
             <component
                 v-for="block in visibleBlocks"
                 :key="block.id"
-                :is="blockComponents[block.type]"
+                :is="getBlockComponent(block.type)"
                 :block="block"
                 :page-id="page.id"
                 :style="getBlockStyle(block)"

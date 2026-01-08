@@ -31,7 +31,7 @@ class PageService
                 'content_type_id' => $data['content_type_id'] ?? null,
                 'header_section_id' => $data['header_section_id'] ?? null,
                 'footer_section_id' => $data['footer_section_id'] ?? null,
-                'created_by' => auth()->id() ?? 1,
+                'created_by' => $this->getCreatorId(),
             ]);
 
             // Get default widgets from content type
@@ -247,5 +247,26 @@ class PageService
             'data' => $resolvedData,
             'is_preview' => true,
         ];
+    }
+
+    /**
+     * Get the creator ID for the current authenticated user.
+     * Handles both User and Employee authentication.
+     */
+    protected function getCreatorId(): int
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return 1; // Default to system user
+        }
+
+        // If authenticated as Employee, use their linked user_id
+        if ($user instanceof \App\Models\Employee) {
+            return $user->user_id ?? 1;
+        }
+
+        // Otherwise use the authenticated user's id
+        return $user->id;
     }
 }

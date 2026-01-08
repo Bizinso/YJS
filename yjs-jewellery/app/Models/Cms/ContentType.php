@@ -2,6 +2,8 @@
 
 namespace App\Models\Cms;
 
+use Database\Factories\Cms\ContentTypeFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -26,7 +28,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class ContentType extends Model
 {
+    use HasFactory;
+
     protected $table = 'content_types';
+
+    protected static function newFactory()
+    {
+        return ContentTypeFactory::new();
+    }
 
     protected $fillable = [
         'name',

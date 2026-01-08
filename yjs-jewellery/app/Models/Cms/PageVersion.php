@@ -3,6 +3,8 @@
 namespace App\Models\Cms;
 
 use App\Models\User;
+use Database\Factories\Cms\PageVersionFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,9 +32,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class PageVersion extends Model
 {
+    use HasFactory;
+
     const UPDATED_AT = null; // Versions are immutable, no updated_at
 
     protected $table = 'page_versions_kernel';
+
+    protected static function newFactory()
+    {
+        return PageVersionFactory::new();
+    }
 
     protected $fillable = [
         'page_id',

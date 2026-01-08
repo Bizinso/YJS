@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Illuminate\Support\Facades\Log;
-class Employee extends Model
-{   
-    use HasApiTokens, SoftDeletes, LogsActivity;
+
+class Employee extends Authenticatable
+{
+    use HasApiTokens, HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'employee_code',
@@ -70,6 +72,15 @@ class Employee extends Model
     public function userrole()
     {
         return $this->belongsTo(Role::class, 'role_id', 'id');
+    }
+
+    /**
+     * Get the user type for authentication middleware.
+     * Employees are treated as 'employee' type for admin access.
+     */
+    public function getUserTypeAttribute(): string
+    {
+        return 'employee';
     }
 
     public function tapActivity(\Spatie\Activitylog\Models\Activity $activity, string $eventName)

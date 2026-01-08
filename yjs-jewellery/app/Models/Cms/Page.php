@@ -3,12 +3,14 @@
 namespace App\Models\Cms;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
+use Database\Factories\Cms\PageFactory;
 
 /**
  * Page Model - Identity Layer Only
@@ -33,9 +35,14 @@ use Illuminate\Support\Str;
  */
 class Page extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'pages';
+
+    protected static function newFactory()
+    {
+        return PageFactory::new();
+    }
 
     protected $fillable = [
         'uuid',
